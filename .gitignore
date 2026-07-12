@@ -1,0 +1,7 @@
+.DS_Store
+.claude/.simplify-ignore-cache/
+.claude/sdd-cache/
+.claude/settings.local.json
+
+.env
+.env.*
