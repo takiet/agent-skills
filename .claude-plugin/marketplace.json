@@ -1,0 +1,21 @@
+{
+  "name": "my-agent-skills",
+  "owner": {
+    "name": "Makoto Takizawa"
+  },
+  "metadata": {
+    "descriptions": "My Skills",
+    "version": "0.0.1"
+  },
+  "plugins": [
+    {
+      "name": "acap-skills",
+      "description": "Engineering skills for ACAP Development",
+      "source": "./",
+      "strict": false,
+      "skills": [
+        "skills/building-acap"
+      ]
+    }
+  ]
+}
