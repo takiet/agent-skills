@@ -21,9 +21,18 @@ Creating design docs with developers, planning the implementation, implementing,
   - Using ACAP SDK libraries (Edge Storage, Event, License Key, Overlay (Axoverlay2), Bounding Box, Parameter, Serial, Video Capture (VDO), Machine Learning (Larod), Device Data Hub)
 - Deploying applications
 
-## Set up a project
+## Available scripts
+- **`scripts/deploy.sh`** -- Deploy the app (eap file) to the device
+- **`scripts/control.sh`** -- Start, Stop, Restart, or Remove the app
+- **`scripts/run.sh`** -- Copy and Run the executable for testing only, and the output is saved to `output` file in text or binary dependent on it.
+- **`scripts/view_log.sh`** -- View the log by the app 
 
+## Initialize a project
+
+- Prepare a minimal manifest.json unless it the file exists by asking the user for `appName` and the application is supposed to use vdo, storage, or overlay APIs. 
 - Prepare Makefile and Dockerfile: See [references/setup.md](references/setup.md)
+- Build the app that do nothing 
+- Deploy the app to the device
 
 ### Project Structure
 
@@ -167,6 +176,8 @@ Each increment should be independently revertable:
 
 ## Red Flags
 
+- Read .env or .env.* files
+- Resolve authentication issue when accessing devices. (Just let the user to resolve it)
 - Deploy applications unless explicitly instructed to do so
 - More than 300 lines of code written without running tests
 - Multiple unrelated changes in a single increment
