@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# Usage
 usage() {
-  echo "Usage: $0 <eap file>"
+  echo "Usage: $0 <appName>"
+  echo 
   exit 1
 }
 
@@ -17,9 +17,8 @@ fi
 
 . ./.env
 
-PKG=$1
+APP_NAME=$1
 
 curl --anyauth -u ${WEB_USER}:${WEB_PASS} \
-  -F packfile=@output/${PKG} \
-  "http://${DEVICE_IP}/axis-cgi/applications/upload.cgi"
+  "http://${DEVICE_IP}/axis-cgi/admin/systemlog.cgi?appname=${APP_NAME}
 
