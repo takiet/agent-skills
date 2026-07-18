@@ -2,7 +2,7 @@
 
 usage() {
   echo "Usage: $0 <appName> <start|stop|restart|remove>"
-  echo 
+  echo
   exit 1
 }
 
@@ -21,6 +21,4 @@ APP_NAME=$1
 ACTION=$2
 
 curl --anyauth -u ${WEB_USER}:${WEB_PASS} \
-  "http://${DEVICE_IP}/axis-cgi/applications/control.cgi?action=${ACTION}&package=${APP_NAME}"
-
-
+  "http://${DEVICE}/axis-cgi/applications/control.cgi?action=${ACTION}&package=${APP_NAME}"

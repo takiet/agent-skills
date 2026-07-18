@@ -20,6 +20,5 @@ fi
 PKG=$1
 
 curl --anyauth -u ${WEB_USER}:${WEB_PASS} \
-  -F packfile=@output/${PKG} \
-  "http://${DEVICE_IP}/axis-cgi/applications/upload.cgi"
-
+  -F packfile=@${PKG} \
+  "http://${DEVICE}/axis-cgi/applications/upload.cgi"

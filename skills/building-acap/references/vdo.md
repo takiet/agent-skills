@@ -121,7 +121,9 @@ Add `vdo_map_set_boolean(settings, "socket.blocking", false);` and poll the fd f
 
 ## Notes & gotchas
 
+- Graceful shutdown / EINTR. ACAP apps receive SIGTERM on stop. If a blocking vdo_stream_get_buffer() is interrupted by the signal it fails with EINTR ("Interrupted system call") — this is expected during shutdown, not a real error. Install a SIGTERM/SIGINT handler that clears a running flag, and in the buffer-fetch failure path treat EINTR (alongside VDO_ERROR_NO_DATA / vdo_error_is_expected()) as benign: if !running, break the loop quietly instead of logging it at LOG_ERR. Call vdo_stream_stop() after the loop.
 - **Always `vdo_stream_buffer_unref()`** every buffer you get, or the stream starves.
+- **`g_autoptr(VdoBuffer)` + `vdo_stream_buffer_unref()` is not a double free.** `vdo_stream_buffer_unref()` takes `&buffer` and sets the pointer to `NULL` after releasing it, so when the `g_autoptr` cleanup runs at end of scope it acts on a `NULL` pointer and does nothing. Using both together is safe and is the recommended pattern: `g_autoptr` guarantees the buffer is released even on an early `break`/`return`, while the explicit unref returns it to VDO promptly inside the loop.
 - Treat `VDO_ERROR_NO_DATA` as transient (retry); use `vdo_error_is_expected()` to
   distinguish benign errors (maintenance, global rotation) from fatal ones.
 - Use `vdo_map_dump()` to log a settings/info map while debugging.
