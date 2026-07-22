@@ -126,6 +126,31 @@ VDO may hand out `vmem` (not dma-buf) buffers. When `buffer.type` != `dmabuf`, c
 `larodConvertVmemFdToDmabuf(vdo_fd, offset, &error)` before setting the tensor fd.
 `dup()` the fd before `larodSetTensorFd()` because larod takes ownership of what it's given.
 
+## Inspect the model — don't hardcode its geometry
+
+You usually can't open a `.tflite` on the build host (no TF tooling), and a wrong guess about
+input dtype/layout or output shape yields *silently wrong detections*, not a crash — so it's the
+kind of bug you chase for hours. The loaded model is the source of truth: after
+`larodAllocModelInputs/Outputs`, read the geometry back and log it once at startup, so a mismatch
+shows up on the first run instead of in the decoded boxes.
+
+- **Input** — `larodGetTensorDims` (4-D `NHWC` vs `NCHW` tells you RGB-interleaved vs planar),
+  `larodGetTensorDataType` (uint8 vs float32 tells you whether the model wants normalized input),
+  `larodGetTensorPitches` (row stride/padding). These drive your pre-processing and the VDO
+  format — confirm them rather than assuming `640×640×3` float from the task text.
+- **Output** — `larodGetTensorDims` gives the head shape (e.g. `[1,25200,85]` vs a transposed
+  variant) and `larodGetTensorFdSize` the byte count. Assert the mmapped size equals what your
+  decoder expects and bail loudly if not, rather than reading past/short of the buffer.
+- **Quantization** — DLPU outputs are often uint8 with a per-tensor scale/zero-point baked into
+  the model; you need both to recover real scores/coordinates. Get them from your
+  model-conversion step (the `tensorflow-to-larod-*` examples) or by inspecting the tflite — don't
+  assume a fixed factor (see the quantization gotcha below).
+
+Want the shapes *before* deploying? A `.tflite` is a FlatBuffer — `netron model.tflite`, `flatc`,
+or a few `python3` lines against the tflite schema print input/output shapes and quantization
+params offline. Handy for writing the decoder up front, but treat runtime introspection as
+authoritative since that's what actually runs on the device.
+
 ## Notes & gotchas
 
 - **Power throttling:** `larodLoadModel()` and `larodRunJob()` can fail with

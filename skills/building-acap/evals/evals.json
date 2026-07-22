@@ -3,10 +3,10 @@
   "evals": [
     {
       "id": 1,
-      "prompt": "I'm starting a brand-new ACAP app from scratch on my Axis camera (ARTPEC-8, ACAP SDK 12.11.0) — the repo is empty. Call it object_detector. My YOLOv5 model and its class labels are already in the repo at models/yolov5.tflite and models/labels.txt — package them into the app. I want it to: grab a YUV frame from the video stream about once a second, use Larod to preprocess each frame into a 640x640 RGB-planar tensor as a square with bottom padding (letterbox added at the bottom), run the YOLOv5 model on it, and then draw the detection bounding boxes on the live stream with each box's class label (from labels.txt) and confidence overlaid. Can you build this out for me?",
-      "expected_output": "A working ACAP project scaffolded skeleton-first: a verified Hello World walking skeleton, then the object_detector feature implemented across feature modules (VDO capture, Larod preprocessing+inference, overlay/bbox drawing). The provided models/yolov5.tflite and models/labels.txt are packaged into the .eap and loaded at runtime. manifest.json carries every required resources declaration (video group, deepLearningProcessor, overlay/dbus). Larod preprocessing yields a 640x640 RGB-planar tensor using bottom padding. SSH/.env setup is handed to the user, and the provided scripts are used for deploy/control/run.",
+      "prompt": "I'm starting a brand-new ACAP app from scratch on my Axis camera (ARTPEC-9, ACAP SDK 12.11.0) — the repo is empty. Call it object_detector. My YOLOv5 model and its class labels are already in the repo at models/yolov5s.tflite and models/labels.txt — package them into the app. I want it to: grab a YUV frame from the video stream about once a second, use Larod to preprocess each frame into a 640x640 RGB-planar tensor as a square with bottom padding (letterbox added at the bottom), run the YOLOv5 model on it, and then draw the detection bounding boxes on the live stream with each box's class label (from labels.txt) and confidence overlaid. Can you build this out for me?",
+      "expected_output": "A working ACAP project scaffolded skeleton-first: a verified Hello World walking skeleton, then the object_detector feature implemented across feature modules (VDO capture, Larod preprocessing+inference, overlay/bbox drawing). The provided models/yolov5s.tflite and models/labels.txt are packaged into the .eap and loaded at runtime. manifest.json carries every required resources declaration (video group, deepLearningProcessor, overlay/dbus). Larod preprocessing yields a 640x640 RGB-planar tensor using bottom padding. SSH/.env setup is handed to the user, and the provided scripts are used for deploy/control/run.",
       "files": [
-        "evals/files/models/yolov5.tflite",
+        "evals/files/models/yolov5s.tflite",
         "evals/files/models/labels.txt"
       ],
       "expectations": [
@@ -14,18 +14,14 @@
         "manifest.json uses schemaVersion 2.1.0 and compatibleOsVersions with both min and max set to 12 (the SDK 12.11.0 major)",
         "appName is identical across manifest.json, the main .c source filename, and the built binary",
         "manifest.json declares a top-level resources.linux.user.groups that includes \"video\" (required by both VDO and Larod)",
-        "manifest.json declares resources.deepLearningProcessor for Larod inference on the ARTPEC-8 DLPU",
+        "manifest.json declares resources.deepLearningProcessor for Larod inference on the ARTPEC-9 DLPU",
         "manifest.json declares the resources needed to draw on the stream: resources.overlay for Axoverlay 2 and/or resources.dbus.requiredMethods for the Bounding Box API",
-        "The provided models/yolov5.tflite and models/labels.txt are packaged into the .eap (not fetched, regenerated, or stubbed) and loaded from the installed app directory at runtime",
-        "Captures frames from VDO as YUV/NV12 at roughly 1 fps",
+        "The provided models/yolov5s.tflite and models/labels.txt are packaged into the .eap (not fetched, regenerated, or stubbed) and loaded from the installed app directory at runtime",
         "Larod preprocessing produces a 640x640 RGB-planar tensor using bottom padding (padding added at the bottom to make the frame square), not center/top padding or a plain resize that distorts aspect ratio",
-        "Runs the provided YOLOv5 model via Larod and decodes the output into detections with class index and confidence",
-        "Maps each detection's class index to a name read from the packaged labels.txt",
-        "Draws bounding boxes on the live stream and overlays each detection's class label and confidence",
         "Consults the relevant reference files (references/vdo.md, references/larod.md, and references/overlay.md and/or references/bbox.md)",
         "Does not read or write .env, and hands SSH credential setup to the user rather than resolving device auth itself",
         "Uses the provided scripts (deploy.sh, control.sh, run.sh, view_log.sh) for deploy/control/test instead of reinventing them",
-        "Organizes the source into feature modules (e.g. separate capture / preprocessing / inference / overlay files) rather than one monolithic .c file"
+        "Organizes the source into feature modules (e.g. separate capture / preprocessing & inference / overlay files) rather than one monolithic .c file"
       ]
     }
   ]
