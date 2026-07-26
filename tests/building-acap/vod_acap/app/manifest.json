@@ -1,0 +1,50 @@
+{
+  "schemaVersion": "2.1.0",
+  "resources": {
+    "linux": {
+      "user": {
+        "groups": [
+          "video",
+          "gpu"
+        ]
+      }
+    },
+    "deepLearningProcessor": {
+      "enabled": true,
+      "required": true
+    },
+    "overlay": {
+      "enabled": true,
+      "required": true
+    }
+  },
+  "acapPackageConf": {
+    "setup": {
+      "appName": "yolov5_detector",
+      "vendor": "Axis Sample",
+      "vendorId": "0A1B2C3D4E",
+      "version": "1.0.0",
+      "runMode": "once",
+      "compatibleOsVersions": [
+        {
+          "min": "12",
+          "max": "12"
+        }
+      ]
+    },
+    "configuration": {
+      "paramConfig": [
+        {
+          "name": "FrameRate",
+          "default": "1",
+          "type": "int:1,10"
+        },
+        {
+          "name": "LoopCount",
+          "default": "10",
+          "type": "int:0,1000000"
+        }
+      ]
+    }
+  }
+}

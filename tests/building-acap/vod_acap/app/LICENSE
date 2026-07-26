@@ -1,0 +1,35 @@
+Copyright (C) 2026, Axis Sample
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+--------------------------------------------------------------------------------
+Third party components
+--------------------------------------------------------------------------------
+
+Skia (https://skia.org) -- statically linked into the overlay binaries.
+Copyright (c) 2011 Google Inc. All rights reserved.
+Licensed under the BSD 3-Clause License.
+
+DejaVuSans.ttf -- bundled in this package and used to draw overlay labels.
+From the Debian/Ubuntu package fonts-dejavu-core. Fonts are (c) Bitstream (see
+below) and (c) Tavmjong Bah; DejaVu changes are in the public domain. Bitstream
+Vera Fonts Copyright (c) 2003 by Bitstream, Inc., licensed under the Bitstream
+Vera Fonts Copyright notice, which permits use, copying, modification and
+distribution subject to the conditions in that notice. Full text:
+/usr/share/doc/fonts-dejavu-core/copyright in the build image.

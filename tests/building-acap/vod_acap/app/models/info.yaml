@@ -1,0 +1,45 @@
+# YOLO quantized model — device-side decoder parameters (Phase 2-B)
+# Generated from provided quantization info. Used by the on-device decoder
+# to dequantize model I/O and post-process raw output into bounding boxes.
+
+model:
+  task: object_detection
+  architecture: yolo
+  quantization: int8  # inferred from scale/zero_point presence; adjust if different
+
+quantization:
+  input:
+    scale: 0.003921568859368563   # ≈ 1/255
+    zero_point: 0
+    dequant_formula: "real_value = (quantized_value - zero_point) * scale"
+
+  output:
+    scale: 0.004144445527344942
+    zero_point: 0
+    dequant_formula: "real_value = (quantized_value - zero_point) * scale"
+
+input:
+  shape: [640, 640, 3]
+  type: uint8
+  
+output:
+  shape: [1, 25200, 85]
+  shape_meaning:
+    batch: 1
+    num_predictions: 25200      # total anchors across all detection heads
+    num_attributes: 85          # 4 (box) + 1 (objectness) + 80 (class scores, COCO)
+  attribute_layout:
+    - index: 0
+      name: x_center
+    - index: 1
+      name: y_center
+    - index: 2
+      name: width
+    - index: 3
+      name: height
+    - index: 4
+      name: objectness_score
+    - index: "5-84"
+      name: class_scores
+      count: 80
+
