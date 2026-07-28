@@ -19,6 +19,6 @@ fi
 
 PKG=$1
 
-curl --anyauth -u ${WEB_USER}:${WEB_PASS} \
+curl --no-progress-meter --anyauth -u ${WEB_USER}:${WEB_PASS} \
   -F packfile=@${PKG} \
   "http://${DEVICE}/axis-cgi/applications/upload.cgi"

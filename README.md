@@ -1,47 +1,41 @@
 # agent-skills
 
-A Claude Code plugin marketplace that packages engineering skills for Axis ACAP application development.
+A Claude Code plugin marketplace packaging engineering skills for Axis ACAP application
+development.
 
-## Overview
+This is not an application codebase. Each skill is Markdown that Claude reads at runtime, so
+there is no build or test step — the documentation *is* the deliverable.
 
-This is not an application codebase. It provides **skills** (Markdown) that Claude reads at runtime — there is no build or test step, and the deliverable is the documentation itself.
+## Skills
 
-## Configuration: Environment Variables
+| Skill | What it does | Setup & usage |
+|---|---|---|
+| [`building-acap`](skills/building-acap/) | Develop, deploy and test ACAP Native SDK applications on Axis devices: project setup, the ACAP APIs (VDO, Larod, Axoverlay 2, Bounding Box, …), and helper scripts for driving a device | [README](skills/building-acap/README.md) |
 
-Copy `.env.example` to `.env` and edit it.
-
-```bash
-DEVICE: Device host or IP address
-WEB_USER: Account name for accessing devices via web or vapix
-WEB_PASS: Password for accessing devices via web or vapix
-```
-
-Set the value for the following variables once the project is set up. These variables are used during development for testing.
-
-```bash
-SSHUSER: SSH user name for accessing devices via ssh 
-SSHPASS: SSH password for accessing devices via ssh
-```
-
-> **Note — SSH host key verification is disabled.** `scripts/run.sh` connects with
-> `-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no`, so it never stores or verifies
-> the device's host key. This is deliberate: a device's host key changes when it is reflashed or
-> reinstalled, and prompting on every change would break automated testing. The trade-off is that
-> you lose protection against man-in-the-middle (host impersonation) attacks, so only use these
-> scripts against devices on a trusted network.
+Skills are distributed **individually** — install only the ones you want. Each has its own README
+covering what it needs before use (device credentials, prerequisites, scripts); read that before
+installing.
 
 ## Installation
 
-Add this marketplace and install the plugin from within Claude Code:
+Add this marketplace once, then install skills by name:
 
 ```
 /plugin marketplace add <this repository>
-/plugin install acap-skills
+/plugin install building-acap@taki-acap-skills
+```
+
+Refresh your local copy of the marketplace after changes are pushed:
+
+```
+/plugin marketplace update taki-acap-skills
 ```
 
 ## Installing in other tools
 
-Each skill is a self-contained `SKILL.md` folder using the standard Agent Skills format, so it works in any tool that discovers skills from a directory. Copy the `skills/building-acap` folder into the location your tool watches.
+Each skill is a self-contained `SKILL.md` folder in the standard Agent Skills format, so it works
+in any tool that discovers skills from a directory. Copy the skill folder into the location your
+tool watches.
 
 ### (ex.) opencode
 
@@ -58,3 +52,41 @@ cp -r skills/building-acap <your-project>/.opencode/skills/
 ```
 
 See the [opencode Skills docs](https://opencode.ai/docs/skills/) for details.
+
+## Repository layout
+
+```
+.claude-plugin/marketplace.json   <- one plugin entry per skill
+skills/<name>/
+├── README.md                     <- setup the skill needs: prerequisites, credentials, scripts
+├── SKILL.md                      <- the skill itself; a router into references/
+├── references/                   <- per-topic docs, loaded on demand
+├── scripts/                      <- helper scripts the skill invokes
+└── evals/                        <- test prompts and expectations for the skill
+tests/                            <- real projects built with these skills, kept as feedback
+```
+
+## Adding a skill
+
+Create `skills/<name>/` with at least a `SKILL.md` and a `README.md`, then add a plugin entry for
+it to `.claude-plugin/marketplace.json`:
+
+```json
+{
+  "name": "<name>",
+  "description": "<what it does>",
+  "source": "./",
+  "strict": false,
+  "skills": ["./skills/<name>"]
+}
+```
+
+The `skills` field matters here: because every entry shares `source: "./"`, the listed paths are
+the *complete* set for that entry — a new directory under `skills/` is not picked up until it is
+listed. See the
+[marketplace docs](https://code.claude.com/docs/en/plugin-marketplaces).
+
+## License
+
+[MIT](LICENSE) © Makoto Takizawa. Each skill declares `license: MIT` in its `SKILL.md`
+frontmatter, so the terms travel with the skill when it is copied into another tool.

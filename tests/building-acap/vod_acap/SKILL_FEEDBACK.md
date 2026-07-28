@@ -28,12 +28,9 @@ cpu-tflite / a9-dlpu-native / armnn-cpu-tflite / cpu-proc / a9-dlpu-tflite / a9-
 正しくは **`a9-dlpu-tflite`**（`axis-` 接頭辞なし）。スキルの名前で `larodGetDevice()` を呼ぶと
 失敗する。
 
-- ARTPEC-8 の `axis-a8-dlpu-tflite` も同様に誤っている可能性が高いが、**手元に実機がなく未検証**。
-  検証できるまでは断定しないほうがよい。
-- 表に載っていないデバイスが実機には複数ある（`a9-dlpu-native`, `armnn-cpu-tflite`,
-  `cpu-proc`, `a9-gpu-proc`）。特に**前処理用デバイス（`cpu-proc` / `a9-gpu-proc`）が
-  表に一切載っていない**のが実害として大きい。前処理の節で名前を挙げずに
-  「前処理用のモデルをロードする」とだけ書かれているため、名前を自力で探す必要があった。
+- ARTPEC-8 は以下が正しい．
+```
+cpu-tflite / axis-ace-proc / cpu-proc / axis-a8-dlpu-tflite / axis-a8-dlpu-native / axis-a8-dlpu-proc / axis-a8-gpu-proc
 
 **提案**: 表に「実機で必ず `larodListDevices()` して確認すること。以下は参考値」と明記し、
 前処理用デバイスの行を追加する。今回の Q1728 の実測一覧をそのまま例として載せてもよい。
@@ -147,6 +144,9 @@ larodModel* pp = larodLoadModel(conn, -1, dev, LAROD_ACCESS_PRIVATE, "pp", map, 
 **このキー名は `larod.h` にも載っていない。** 公式の `object-detection-yolov5` サンプルを
 読んで確認した。スキルに 10 行足すだけで、この探索が丸ごと不要になる。
 
+詳細は次のドキュメントを参照:
+[Preprocessing](https://developer.axis.com/acap/acap-native-sdk-version-12/api/src/api/larod/html/md__opt_builder-doc_larod_doc_preprocessing.html)
+
 特に効くポイント:
 - `larodLoadModel()` の第 2 引数に **`-1`** を渡すという発想は、ドキュメントなしでは出てこない
 - `row-pitch` の単位（バイト単位。RGB interleaved なら幅 × 3）
@@ -206,9 +206,8 @@ all: $(PROG) $(TEST_CAPTURE)      # app/Makefile の all で両方ビルドす�
 
 ### B-6. テストバイナリの syslog ident
 
-テストバイナリで `openlog()` の ident をバイナリ名（`test_capture`）にすると、
-**`view_log.sh <appName>` に一切出てこない**。ログは appName で絞り込まれるため。
-テストバイナリでも ident は **appName に揃える**必要がある。
+テストバイナリで `openlog()` の ident をバイナリ名（`test_capture`）にし、
+**`view_log.sh test_capture` で読み取る**。ログは実行バイナリごとに抽出できるようにする。
 
 ---
 
@@ -219,7 +218,7 @@ all: $(PROG) $(TEST_CAPTURE)      # app/Makefile の all で両方ビルドす�
 `scripts/` のうち **`deploy.sh` だけ +x が付いており**、`control.sh` / `run.sh` /
 `view_log.sh` は付いていない。そのまま呼ぶと `permission denied` になる。
 
-→ リポジトリ側で +x を付けるか、`SKILL.md` の「Available scripts」に
+→ `SKILL.md` の「Available scripts」に
 「`bash <script>` で起動する」と書く。
 
 ### C-2. スクリプトは cwd の `./.env` を参照する
@@ -240,10 +239,9 @@ all: $(PROG) $(TEST_CAPTURE)      # app/Makefile の all で両方ビルドす�
 
 ### C-4. `deepLearningProcessor` の要否
 
-前処理を `cpu-proc`（CPU/libyuv）で行う場合、`resources.deepLearningProcessor` が本当に
-必要かは未検証。今回は推論（`a9-dlpu-tflite`）で使う前提で先に入れてある。
-スキルの表は「Larod = deepLearningProcessor が必要」と読めるが、**CPU バックエンドのみの
-構成では不要な可能性がある**。検証できれば注記したい。
+今回は推論（`a9-dlpu-tflite`）で使う前提で先に入れてある。
+スキルの表は「Larod = deepLearningProcessor が必要」と読めるが、**前処理と推論処理両方ともCPU バックエンドのみの
+構成では不要である**。
 
 ---
 
@@ -394,12 +392,6 @@ int8/uint8 量子化の出力はスコアが離散値なので、**別のアン�
 
 正直に記録しておく。
 
-- ARTPEC-8 / CV25 / EdgeTPU のデバイス名が同様に誤っているかは**未確認**（実機なし）。
-  Q1728（ARTPEC-9）でしか確認していない。
-- `a9-gpu-proc` を前処理に使った場合の挙動・性能は**未計測**。今回は `cpu-proc` で十分だった。
-- `deepLearningProcessor` を宣言しない場合に `cpu-proc` だけの構成が動くかは**未検証**（C-4）。
-- D-1 の量子化パラメータは skill 同梱の `yolov5s.tflite` の実測値。ユーザーが持つ別の int8 版では
-  値が異なる可能性がある。
 - **H-1 の `drawString` の件は、確かなのは「ビルドによって文字が出たり出なかったりした」ことだけ。**
   一切描画されないのか、間欠なのか、条件依存なのかは**分かっていない**。当初「0 px / 60 サンプル、
   一度も描画されない」と断定して記録したが、**その根拠にした測定が信用できないと後で判明した**

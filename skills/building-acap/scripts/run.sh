@@ -49,9 +49,10 @@ APP_NAME=${POSITIONAL[0]}
 BIN=${POSITIONAL[1]}
 
 . ./.env
+export SSHPASS=${SSH_PASS}
 
 # Host key checking is disabled (see README): the device's host key changes on
 # reflash/reinstall, so we neither store nor verify it. This drops MITM
 # protection — only use on a trusted network.
 sshpass -e ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no \
-  "${SSHUSER}@${DEVICE}" "/usr/local/packages/${APP_NAME}/${BIN} ${ARG}" > output
+  "${SSH_USER}@${DEVICE}" "/usr/local/packages/${APP_NAME}/${BIN} ${ARG}" > output
