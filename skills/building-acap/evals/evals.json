@@ -3,25 +3,22 @@
   "evals": [
     {
       "id": 1,
-      "prompt": "I'm starting a brand-new ACAP app from scratch on my Axis camera (ARTPEC-9, ACAP SDK 12.11.0) — the repo is empty. Call it object_detector. My YOLOv5 model and its class labels are already in the repo at models/yolov5s.tflite and models/labels.txt — package them into the app. I want it to: grab a YUV frame from the video stream about once a second, use Larod to preprocess each frame into a 640x640 RGB-planar tensor as a square with bottom padding (letterbox added at the bottom), run the YOLOv5 model on it, and then draw the detection bounding boxes on the live stream with each box's class label (from labels.txt) and confidence overlaid. Can you build this out for me?",
-      "expected_output": "A working ACAP project scaffolded skeleton-first: a verified Hello World walking skeleton, then the object_detector feature implemented across feature modules (VDO capture, Larod preprocessing+inference, overlay/bbox drawing). The provided models/yolov5s.tflite and models/labels.txt are packaged into the .eap and loaded at runtime. manifest.json carries every required resources declaration (video group, deepLearningProcessor, overlay/dbus). Larod preprocessing yields a 640x640 RGB-planar tensor using bottom padding. SSH/.env setup is handed to the user, and the provided scripts are used for deploy/control/run.",
-      "files": [
-        "evals/files/models/yolov5s.tflite",
-        "evals/files/models/labels.txt"
-      ],
+      "prompt": "I'm starting a brand-new ACAP app from scratch on my Axis camera (ARTPEC-9, ACAP SDK 12.11.0) — the repo is completely empty. Call it object_detector; eventually it'll run a YOLOv5 model, but right now I just want the project standing up and proven to actually run on the device. Docker build producing the .eap, the manifest, the Makefiles, installed and logging on the camera. Can you set that up?",
+      "expected_output": "A verified walking skeleton and nothing more: Dockerfile + root Makefile pinned to SDK 12.11.0, a minimal manifest.json (schemaVersion 2.1.0, compatibleOsVersions min/max 12, no resource declarations the skeleton doesn't use), an app/Makefile deriving appName from the manifest, and an app that only logs 'Hello World'. Driven through build -> install -> start -> log check, then SSH setup handed to the user and, once they confirm, verified by running the installed binary over SSH. No VDO/Larod/overlay code written.",
+      "files": [],
       "expectations": [
-        "Begins with Phase 1: stands up a Hello World walking skeleton and drives it through build -> install -> start -> log check -> run.sh over SSH before writing any detection feature code, because the repo starts empty",
+        "Builds only a Hello World walking skeleton — no VDO, Larod or overlay feature code is written, even though the prompt names YOLOv5 as the eventual goal",
         "manifest.json uses schemaVersion 2.1.0 and compatibleOsVersions with both min and max set to 12 (the SDK 12.11.0 major)",
-        "appName is identical across manifest.json, the main .c source filename, and the built binary",
-        "manifest.json declares a top-level resources.linux.user.groups that includes \"video\" (required by both VDO and Larod)",
-        "manifest.json declares resources.deepLearningProcessor for Larod inference on the ARTPEC-9 DLPU",
-        "manifest.json declares the resources needed to draw on the stream: resources.overlay for Axoverlay 2 and/or resources.dbus.requiredMethods for the Bounding Box API",
-        "The provided models/yolov5s.tflite and models/labels.txt are packaged into the .eap (not fetched, regenerated, or stubbed) and loaded from the installed app directory at runtime",
-        "Larod preprocessing produces a 640x640 RGB-planar tensor using bottom padding (padding added at the bottom to make the frame square), not center/top padding or a plain resize that distorts aspect ratio",
-        "Consults the relevant reference files (references/vdo.md, references/larod.md, and references/overlay.md and/or references/bbox.md)",
-        "Does not read or write .env, and hands SSH credential setup to the user rather than resolving device auth itself",
-        "Uses the provided scripts (deploy.sh, control.sh, run.sh, view_log.sh) for deploy/control/test instead of reinventing them",
-        "Organizes the source into feature modules (e.g. separate capture / preprocessing & inference / overlay files) rather than one monolithic .c file"
+        "manifest.json declares no resources the skeleton does not use — no video group, no deepLearningProcessor, no overlay — since resource declarations are added alongside the code that needs them",
+        "appName is identical across manifest.json, the main source filename, and the built binary",
+        "Dockerfile and root Makefile pin VERSION to the 12.11.0 the user gave, and default ARCH to aarch64",
+        "app/Makefile derives PROG from manifest.json with jq rather than hardcoding the name in a second place",
+        "Drives the pipeline in order: make build -> deploy.sh to install -> control.sh start -> view_log.sh showing 'Hello World'",
+        "Hands SSH setup to the user — asks them to set the app SSH user's password and fill in .env themselves — and waits for confirmation rather than proceeding",
+        "Does not read or write .env, and does not try to resolve device authentication itself",
+        "Completes Setup Verification by running the installed binary over SSH (run.sh <appName> <appName>) and confirming it outputs 'Hello World'",
+        "Invokes the provided scripts as `bash scripts/<name>.sh` from the project root instead of reinventing deploy/control/log logic",
+        "Consults references/setup.md for the Makefile and Dockerfile rather than inventing a build setup"
       ]
     }
   ]

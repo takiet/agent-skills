@@ -1,9 +1,15 @@
 # Bounding Box API
 
 Fast, simple drawing of bounding boxes and polylines on video, optimized across all Axis chip
-platforms. This is the go-to API for visualizing video-content-analytics results (from
-[larod.md](larod.md)) — much simpler than [overlay.md](overlay.md) when you only need
-rectangles, quads and lines.
+platforms. Much simpler than [overlay.md](overlay.md) for visualizing video-content-analytics
+results (from [larod.md](larod.md)) — when rectangles, quads and lines are all you need.
+
+> ⚠️ **Bounding Box cannot draw text.** There is no text function in `bbox.h` — the drawing API
+> is `bbox_rectangle` / `bbox_quad` / `bbox_move_to` / `bbox_line_to` / `bbox_draw_path`, and
+> that's all of it. Object detection normally wants a class label and confidence next to each
+> box, so check that requirement *first*: if any text is involved, use
+> [overlay.md](overlay.md) (Axoverlay 2) from the start. Picking bbox because it looks easier and
+> discovering this when you get to labels means rewriting the whole drawing layer.
 
 **API specification:** https://developer.axis.com/acap/acap-native-sdk-version-12/api/src/api/bbox/html/index.html
 
@@ -88,9 +94,12 @@ bbox_video_output(bbox, true);   // also render into the live video output, if t
 | Thickness | `bbox_thickness_thin()`, `_medium()`, `_thick()` |
 | Geometry | `bbox_rectangle()`, `bbox_quad()`, `bbox_move_to()`, `bbox_line_to()`, `bbox_draw_path()` |
 | Frame control | `bbox_clear()`, `bbox_commit()`, `bbox_video_output()` |
+| **Text** | **none — the API has no text drawing. Use [overlay.md](overlay.md)** |
 
 ## Notes & gotchas
 
+- **No labels.** Geometry only — the moment the requirement includes a class name, a confidence
+  value or any string, this API is the wrong choice. See the warning at the top.
 - **`bbox_color_from_rgb()` is slow** — allocate every color once at startup, then switch with
   the cheap `bbox_color()`.
 - Nothing is shown until `bbox_commit()`; all queued geometry appears simultaneously.

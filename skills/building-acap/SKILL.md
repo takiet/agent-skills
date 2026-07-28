@@ -2,6 +2,8 @@
 name: building-acap
 description: >
   Develop ACAP (Axis Camera Application Platform) applications using the ACAP Native SDK. Use when implementing, testing, and reviewing applications running on Axis devices, and when helping developers understand ACAP development.
+version: 0.1.0
+license: MIT
 ---
 
 # Building ACAP apps
@@ -46,9 +48,22 @@ The one time it's fine to skip is when a skeleton has already been installed and
 device in this project; then go straight to Phase 2.
 
 ## Available scripts
+
+**Run them with `bash`, from the project root.** Both halves matter, and each fails in a way that
+points somewhere else:
+
+- **`bash <script>`, not the script directly.** They are not all marked executable, so calling one
+  directly gives `permission denied` — which reads like a device problem but isn't.
+- **cwd must be the project root**, since each script sources the device credentials from `./.env`
+  and reads the `.eap` by relative path. `.env missing` usually means cwd drifted, not that
+  anything is wrong with the device. If the file genuinely doesn't exist yet, ask the user to
+  create it (see `README`) rather than creating or editing it yourself.
+
 - **`scripts/deploy.sh`** -- Deploy the app (eap file) to the device
   - Arguments:
     - A eap filename (.eap)
+- **`scripts/setup_ssh.sh`** -- Set the password of the app's dedicated SSH user, so `run.sh` can
+  log in. Run once after the first install; takes no arguments.
 - **`scripts/control.sh`** -- Start, Stop, Restart, or Remove the app
   - Arguments:
     - `appName`
@@ -58,9 +73,24 @@ device in this project; then go straight to Phase 2.
     - `appName` (the installed app that packages the test binary)
     - the test binary name (inside the installed package)
     - **-a "args"**: Optional. for passing additional arguments to the test binary
-- **`scripts/view_log.sh`** -- View the log by the app 
+- **`scripts/view_log.sh`** -- View the log by the executable
   - Arguments:
-    - `appName`
+    - `binary-name`: appName or test binary name
+
+### Deploy/install traps
+
+These cost real time and none of them announce themselves clearly:
+
+- **`deploy.sh` resets the app's log.** Always go **deploy → run → read log**. Slipping a deploy
+  in between running something and reading its log throws away exactly the output you wanted.
+- **Don't `control.sh remove` between iterations — install over the top.** Removing the app
+  deletes its dedicated SSH user *and that user's password*, so the user has to go back into the
+  device UI and set a password again before you can run anything over SSH. Overwrite-install
+  keeps it. Reserve `remove` for when you genuinely want a clean slate.
+- **Upload failing with `Error: 27` means the `vendorId` doesn't match** the installed app of the
+  same `appName`. The device refuses the swap. Keep `vendorId` fixed for the life of the project
+  — that stability is what makes overwrite-install (and therefore the surviving SSH user)
+  possible.
 
 ## Set up a project
 
@@ -71,38 +101,54 @@ feature code (see [Workflow](#workflow-skeleton-first-then-features)).
   build `VERSION` (Makefile/Dockerfile) and the manifest `compatibleOsVersions` (its major).
 - Generate a minimal manifest.json unless the manifest file exists by asking the user for `appName` and ACAP libraries to be used among vdo, storage, and overlay. Use the known-good minimal template in [Manifest file](#manifest-file-manifestjson) (`schemaVersion` 2.1.0, `vendorId`, and `compatibleOsVersions` with `min`/`max` set to the SDK major) so the first build isn't blocked by manifest defaults.
 - Generate Makefile and Dockerfile with `VERSION` set to the SDK version the user gave: See [references/setup.md](references/setup.md)
-- Build the app that just says 'Hello World' via syslog, producing the `.eap`.
-- Install the eap with `deploy.sh`. **Installing the app creates a dedicated SSH user for it on
+- **Write `app/LICENSE`.** `acap-build` refuses to package without it — it stops with
+  `Could not find a readable LICENSE file`, after the compile has already succeeded, so it reads
+  like a packaging bug rather than a missing file. Any license text will do for local development.
+- Build the app that just says 'Hello World', producing the `.eap`. Write the message to **both
+  syslog and stdout** — the two verification steps below read different channels, and an app that
+  only calls `syslog()` passes the log check and then leaves `output` empty forever:
+
+  ```c
+  openlog("<appName>", LOG_PID, LOG_USER);
+  syslog(LOG_INFO, "Hello World");   // read by view_log.sh
+  printf("Hello World\n");           // captured into `output` by run.sh
+  ```
+- Install the eap with `bash scripts/deploy.sh`. **Installing the app creates a dedicated SSH user for it on
   the device** — this is exactly why the skeleton has to be installed before any SSH testing is
   possible.
-- Start the app and confirm the log shows 'Hello World' using the `view_log.sh` script. This goes
+- Start the app and confirm the log shows 'Hello World' using `bash scripts/view_log.sh`. This goes
   over HTTP and needs no SSH yet, so it verifies the build/install/start path on its own.
   - If it fails, tell the user to look at `README` and check device access. If the issue is not
     device access, investigate what is wrong or missing based on the messages.
-- Now hand the SSH setup to the user and wait for them before going further — this step is theirs,
-  not yours:
-  - Ask the user to confirm on the device that the app's SSH user was created, and to **set a
-    password** for that user via the device UI.
-  - Ask them to put the resulting SSH credentials into `.env` themselves. DO NOT read or write
-    `.env` — just let the user do it.
-  - Do not continue until the user reports this is done.
-- Once the user confirms the SSH user exists and its password is set, verify SSH execution: run the
-  installed binary over SSH with `run.sh <appName> <appName>` and check the output is 'Hello
-  World'. When this passes, the project environment is ready for development and testing.
+- Set SSH password by using `bash scripts/setup_ssh.sh`. If some error happens, inform the user instead of investing it. Just make sure the user confirm the contents in `.env` are correct, especially, if `APP_NAME` matches `appName`. DO NOT touch `.env`.
+  - If the issue remains, ask the user to confirm on the device that the app's SSH user was created. If not, ask the user make sure that **Developer Mode** is configured correctly.
+- Once SSH password is set successfully, verify SSH execution: run the installed binary over SSH
+  with `bash scripts/run.sh <appName> <appName>` and check that the `output` file contains
+  'Hello World'. When this passes, the project environment is ready for development and testing.
+  - An **empty `output` with exit status 0** means the binary ran but wrote nothing to stdout —
+    look for a `printf`, not for an SSH fault. Confirm it really ran by checking that
+    `bash scripts/view_log.sh <appName>` gained a fresh syslog line; if it did, SSH is fine.
 
 ### Project Structure
 
 ```
 project-root/
 ├── Dockerfile
-├── Makefile          <- For build
+├── Makefile               <- For build
+├── .env                   <- Device credentials. The user's file — never read or write it
 └── app/
     ├── manifest.json
-    ├── Makefile      <- For compiling C/C++ applications
-    ├── LICENSE       <- License information including third party libraries
-    ├── <appName>.c   <- main: appName must match with manifest.json
-    └── <feature>.c   <- Individual modules/features
+    ├── Makefile           <- For compiling C/C++ applications
+    ├── LICENSE            <- License information including third party libraries
+    ├── <appName>.c        <- main: appName must match with manifest.json (.cc for C++)
+    ├── <feature>.c        <- app-dependent: individual modules/features
+    ├── test_<feature>.c   <- app-dependent: test binaries (needs acap-build -a)
+    └── models/            <- app-dependent: model + labels (needs acap-build -a)
 ```
+
+The app-dependent entries arrive with the feature that needs them. `acap-build` packages only the
+app binary, so each also needs an `-a` flag — and test binaries need building as well, via the
+`all` target of `app/Makefile`. See [references/setup.md](references/setup.md).
 
 ### Setup Verification
 
@@ -111,8 +157,8 @@ is checked — an unchecked box means the environment, not your future feature, 
 
 - [ ] EAP file (.eap) generated by building the app successfully
 - [ ] Install the app successfully
-- [ ] Start the app successfully and check if the app output "Hello World"
-- [ ] Run the app's binary from the installed package over SSH (`run.sh <appName> <appName>`) and check it outputs "Hello World"
+- [ ] Start the app successfully and see "Hello World" via `bash scripts/view_log.sh <appName>` (syslog)
+- [ ] Run the app's binary from the installed package over SSH (`bash scripts/run.sh <appName> <appName>`) and find "Hello World" in the `output` file (stdout)
 
 ## Building Process
 
@@ -146,31 +192,44 @@ to `/tmp`. Exercising the actual installed artifact means you test it in the rea
 on the device, with the same packaging and paths the app uses, rather than a one-off copy.
 
 Flow: add the test binary to the app so `acap-build` packages it into the eap → `make build` →
-`scripts/deploy.sh` to install → `scripts/run.sh <appName> <test-binary>` runs it over SSH and
-captures the result in `output`.
+`bash scripts/deploy.sh` to install → `bash scripts/run.sh <appName> <test-binary>` runs it over
+SSH and captures the result in `output`.
+
+Concretely, that takes two changes — one to build the binary, one to package it:
+
+```makefile
+all: $(PROG) $(TEST_CAPTURE)      # app/Makefile: acap-build packages, it does not build
+```
+```dockerfile
+RUN . /opt/axis/acapsdk/environment-setup* && acap-build ./ -a test_capture
+```
+
+`-a` repeats and takes subdirectory paths, and it's the same mechanism for shipping models,
+labels and fonts — see [references/setup.md](references/setup.md).
+
+Two conventions that make the results readable:
+
+- **Results to stdout, diagnostics to stderr/syslog.** `run.sh` collects stdout into `output`, so
+  keeping it to just the result means a test can emit binary data (a raw frame, a tensor dump)
+  and still be logged normally.
+- **Set the syslog ident to the binary's own name** in `openlog()`, not the appName. Then
+  `bash scripts/view_log.sh <test-binary>` shows only that binary's log, instead of everything the app has
+  ever written interleaved.
+
+For inference and image pre-processing, build a **host-side reference** to check the device
+against. The failures there are silent rather than loud — a wrong quantization scale or row-pitch
+gives you a running app with wrong output — so a test that only proves "it didn't crash" proves
+very little.
 
 ### Makefile (app/Makefile)
 
-```makefile
-PROG = $(shell jq -r '.acapPackageConf.setup.appName' manifest.json)
-OBJS = $(PROG).c
-DEBUG_DIR = debug
+Templates for both C and C++, the `PKGS`/pkg-config expansion, and how to package extra files
+into the `.eap` → [references/setup.md](references/setup.md).
 
-CFLAGS += -Wall -Wextra -Wformat=2 -Wpointer-arith \
-          -Wbad-function-cast -Wstrict-prototypes -Wmissing-prototypes -Werror
-
-all: $(PROG)
-
-$(PROG): $(OBJS)
-        install -d $(DEBUG_DIR)
-        $(CC) $^ $(CFLAGS) $(LIBS) $(LDFLAGS) $(LDLIBS) -o $(DEBUG_DIR)/$@
-        cp $(DEBUG_DIR)/$@ .
-        $(STRIP) $@
-
-clean:
-        rm -rf $(PROG) *.o *.eap* *_LICENSE.txt package.conf* param.conf tmp* $(DEBUG_DIR)
-```
-Extract `appName` from `manifest.json` using `jq`
+Two things that cost time if you get them wrong: derive `PROG` from `manifest.json` with `jq`
+rather than typing the name twice, and if the project is C++, remove the C-only warning options
+(`-Wbad-function-cast`, `-Wstrict-prototypes`, `-Wmissing-prototypes`) — under `-Werror` they
+break the build.
 
 ### Manifest file (manifest.json)
 
@@ -232,10 +291,10 @@ APIs below. The last column lists what each API requires in `manifest.json` — 
 | API | Purpose | Reference | manifest.json requirement |
 |---|---|---|---|
 | VDO (Video Capture) | Capture frames (H.264/H.265/AV1/JPEG/YUV/RGB) | `references/vdo.md` | `resources.linux.user.groups: ["video"]` |
-| Larod | Edge inference & image preprocessing | `references/larod.md` | `resources.linux.user.groups: ["video"]` + `resources.deepLearningProcessor` (DLPU chips) |
+| Larod | Edge inference & image preprocessing | `references/larod.md` | `resources.linux.user.groups: ["video"]` + `resources.deepLearningProcessor` — only if a job actually runs on the DLPU |
 | Event (Axevent) | Event handling (stateless/stateful) | `references/event.md` | none |
-| Axoverlay 2 | Overlay custom graphics onto streams | `references/overlay.md` | `resources.overlay {enabled, required}` |
-| Bounding Box | Fast boxes/polylines for analytics results | `references/bbox.md` | `resources.dbus.requiredMethods` (Graphics2/Overlay2) + `resources.linux.user.groups: ["video"]` |
+| Axoverlay 2 | Overlay custom graphics onto streams — the only option if you need **text** | `references/overlay.md` | `resources.overlay {enabled, required}` (+ `linux.user.groups: ["gpu"]` for GPU rendering) |
+| Bounding Box | Fast boxes/polylines for analytics results — geometry only, **cannot draw text** | `references/bbox.md` | `resources.dbus.requiredMethods` (Graphics2/Overlay2) + `resources.linux.user.groups: ["video"]` |
 | Parameter (AXParameter) | Parameter management + change callbacks | `references/parameter.md` | `acapPackageConf.configuration.paramConfig[]` |
 | Edge Storage (AXStorage) | Read/Write to SD card / NAS | `references/storage.md` | `resources.linux.user.groups: ["storage"]` |
 | Serial Port | RS-232/422/485 | `references/serial.md` | `resources.linux.user.groups: ["admin"]` |
@@ -248,15 +307,15 @@ APIs below. The last column lists what each API requires in `manifest.json` — 
 
 ## Deploy apps
 
-Use `scripts/deploy.sh` script.
+`bash scripts/deploy.sh <file>.eap`
 
 ### Control apps (start, stop, restart, or remove)
 
-Use `scripts/control.sh` script.
+`bash scripts/control.sh <appName> start|stop|restart|remove`
 
 ## View application logs
 
-Use `scripts/view_log.sh` script.
+`bash scripts/view_log.sh <binary-name>`
 
 ## Implementation Rules
 
@@ -293,6 +352,12 @@ Each increment should be independently revertable:
 - Touching files outside the task scope "while I'm here"
 - Creating new utility files for one-time operations
 - Running the same build/test command twice in a row without any intervening code change
+- Trusting a **new measurement** — a pixel readback, a checksum, a custom probe — before checking
+  it against a known answer. Draw a filled rectangle of known area and confirm the measurement
+  reports it. Uncalibrated instruments don't just fail to help; they start overriding reality
+- Dismissing what a **human observed** because your measurement disagrees. Suspect the measurement
+  first, especially if you just wrote it. Concluding "the user misread it" on the strength of an
+  unverified probe is how a real, reproducible bug gets recorded as nonexistent
 
 ## Verification
 

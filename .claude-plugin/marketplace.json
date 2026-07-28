@@ -1,20 +1,18 @@
 {
-  "name": "my-agent-skills",
+  "name": "taki-acap-skills",
+  "description": "Engineering skills for Axis ACAP application development",
+  "version": "0.0.1",
   "owner": {
     "name": "Makoto Takizawa"
   },
-  "metadata": {
-    "descriptions": "My Skills",
-    "version": "0.0.1"
-  },
   "plugins": [
     {
-      "name": "acap-skills",
-      "description": "Engineering skills for ACAP Development",
+      "name": "building-acap",
+      "description": "Develop, deploy and test ACAP Native SDK applications on Axis devices",
       "source": "./",
       "strict": false,
       "skills": [
-        "skills/building-acap"
+        "./skills/building-acap"
       ]
     }
   ]

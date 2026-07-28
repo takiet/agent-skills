@@ -20,5 +20,5 @@ fi
 APP_NAME=$1
 ACTION=$2
 
-curl --anyauth -u ${WEB_USER}:${WEB_PASS} \
+curl --no-progress-meter --anyauth -u ${WEB_USER}:${WEB_PASS} \
   "http://${DEVICE}/axis-cgi/applications/control.cgi?action=${ACTION}&package=${APP_NAME}"
