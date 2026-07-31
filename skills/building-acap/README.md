@@ -1,5 +1,7 @@
 # building-acap
 
+> **Disclaimer:** This is an independent project and is not affiliated with, endorsed by, or sponsored by Axis Communications AB.
+
 Develop, deploy and test ACAP (Axis Camera Application Platform) applications with the ACAP
 Native SDK.
 
@@ -82,3 +84,11 @@ itself. That ordering exists because the toolchain has many environment-specific
 and debugging your code and your environment simultaneously is what costs the day.
 
 See [SKILL.md](SKILL.md) for the full workflow and the per-API manifest requirements.
+
+## Disclaimer
+
+This project is an independent project and is not affiliated with, endorsed by, sponsored by, or otherwise associated with Axis Communications AB.
+
+The views, opinions, and code expressed in this repository are solely those of the author and do not necessarily reflect the views or opinions of Axis Communications AB.
+
+Axis Communications and all related trademarks are the property of their respective owners.
