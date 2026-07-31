@@ -1,5 +1,7 @@
 # agent-skills
 
+> **Disclaimer:** This is an independent project and is not affiliated with, endorsed by, or sponsored by Axis Communications AB.
+
 A Claude Code plugin marketplace packaging engineering skills for Axis ACAP application
 development.
 
@@ -90,3 +92,11 @@ listed. See the
 
 [MIT](LICENSE) © Makoto Takizawa. Each skill declares `license: MIT` in its `SKILL.md`
 frontmatter, so the terms travel with the skill when it is copied into another tool.
+
+## Disclaimer
+
+This project is an independent project and is not affiliated with, endorsed by, sponsored by, or otherwise associated with Axis Communications AB.
+
+The views, opinions, and code expressed in this repository are solely those of the author and do not necessarily reflect the views or opinions of Axis Communications AB.
+
+Axis Communications and all related trademarks are the property of their respective owners.
