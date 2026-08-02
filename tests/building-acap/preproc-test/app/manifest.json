@@ -1,0 +1,20 @@
+{
+  "schemaVersion": "2.1.0",
+  "acapPackageConf": {
+    "setup": {
+      "appName": "ppcomp",
+      "vendor": "My Company",
+      "vendorId": "0123456ABC",
+      "version": "1.0.0",
+      "runMode": "once",
+      "compatibleOsVersions": [ { "min": "12", "max": "12" } ]
+    }
+  },
+  "resources": {
+    "linux": {
+      "user": {
+        "groups": ["video"]
+      }
+    }
+  }
+}
