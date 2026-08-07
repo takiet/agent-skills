@@ -58,6 +58,11 @@ FROM scratch AS export
 COPY --from=builder /opt/app/* /
 ```
 
+On an Apple Silicon host every build ends with
+`InvalidBaseImagePlatform: ... was pulled with platform "linux/amd64", expected "linux/arm64"`.
+The SDK image is amd64-only and runs under emulation; the cross-compiler still emits a genuine
+`aarch64` binary. Expected, and there is nothing to fix.
+
 ## Packaging extra files into the eap
 
 By default `acap-build ./` packages the application binary named in `manifest.json` and nothing

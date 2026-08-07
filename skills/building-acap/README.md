@@ -53,6 +53,10 @@ that the skill instructs Claude never to read or write it.
 > reinstalled, and prompting on every change would break automated testing. The trade-off is that
 > you lose protection against man-in-the-middle (host impersonation) attacks, so only use these
 > scripts against devices on a trusted network.
+>
+> Every run therefore prints `Warning: Permanently added '<host>' (ECDSA) to the list of known
+> hosts.` Nothing is actually stored — the list is `/dev/null` — which is why the warning never
+> stops appearing. It goes to stderr, so it does not contaminate the `output` file.
 
 ## Scripts
 
