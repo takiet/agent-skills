@@ -36,11 +36,13 @@ cp .env.example <your-acap-project>/.env
 | Variable | Meaning |
 |---|---|
 | `DEVICE` | Device host name or IP address |
-| `APP_NAME` | Application name; must match `appName` in `manifest.json` |
 | `WEB_USER` | Account name for accessing the device via web / VAPIX |
 | `WEB_PASS` | Password for the above |
-| `SSH_USER` | SSH user name. Created automatically from `APP_NAME` on install — normally no need to edit |
 | `SSH_PASS` | SSH password used during development; set it on the device with `setup_ssh.sh` |
+
+The application name is deliberately *not* in here — it is passed to each script as an argument
+instead, so one `.env` serves every project on the device. Installing an app creates its dedicated
+SSH user as `acap-<appName>`, and the scripts derive that name from the argument you give them.
 
 `.env` holds real credentials, so it is gitignored — keep it out of version control, and note
 that the skill instructs Claude never to read or write it.
@@ -61,7 +63,7 @@ drifted rather than anything being wrong with the device.
 | Script | Purpose |
 |---|---|
 | `bash scripts/deploy.sh <file>.eap` | Upload and install the package on the device |
-| `bash scripts/setup_ssh.sh` | Set the password of the app's dedicated SSH user. Run once after the first install |
+| `bash scripts/setup_ssh.sh <appName>` | Set the password of the app's `acap-<appName>` SSH user. Run once after the first install |
 | `bash scripts/control.sh <appName> start\|stop\|restart\|remove` | Control the installed app |
 | `bash scripts/run.sh <appName> <binary> [-a "args"]` | Run a binary from the installed package over SSH; stdout is captured to the `output` file |
 | `bash scripts/view_log.sh <binary-name>` | Show the syslog output for an app or test binary |

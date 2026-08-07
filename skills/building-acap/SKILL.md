@@ -62,8 +62,10 @@ points somewhere else:
 - **`scripts/deploy.sh`** -- Deploy the app (eap file) to the device
   - Arguments:
     - A eap filename (.eap)
-- **`scripts/setup_ssh.sh`** -- Set the password of the app's dedicated SSH user, so `run.sh` can
-  log in. Run once after the first install; takes no arguments.
+- **`scripts/setup_ssh.sh`** -- Set the password of the app's dedicated SSH user (`acap-<appName>`),
+  so `run.sh` can log in. Run once after the first install.
+  - Arguments:
+    - `appName`
 - **`scripts/control.sh`** -- Start, Stop, Restart, or Remove the app
   - Arguments:
     - `appName`
@@ -95,11 +97,22 @@ These cost real time and none of them announce themselves clearly:
 ## Set up a project
 
 **Phase 1 — the walking skeleton.** Complete this and pass Setup Verification before writing any
-feature code (see [Workflow](#workflow-skeleton-first-then-features)).
+feature code (see [Workflow](#workflow-skeleton-first-then-features)). It starts by fixing
+`appName` and `vendorId`.
+
+Two values are chosen here and then never change. Settle both before generating any file — each is
+free to pick now and expensive to revise once the app is installed:
+
+| Value | Where it lands | Cost of changing it later |
+|---|---|---|
+| `appName` | `<appName>.c`, the binary, `manifest.json`, `/usr/local/packages/<appName>/`, and the SSH user `acap-<appName>` | A full reinstall: the old app's SSH user is stranded on the device and `bash scripts/setup_ssh.sh <appName>` has to run again |
+| `vendorId` | `manifest.json` | Overwrite-install of the same `appName` stops with `Error: 27` |
+
+Ask the user for `appName` if they haven't given one. ASCII letters, digits and underscore `_` only.
 
 - Ask the user for the target **ACAP SDK version** (e.g. `12.11.0`). It feeds two places: the
   build `VERSION` (Makefile/Dockerfile) and the manifest `compatibleOsVersions` (its major).
-- Generate a minimal manifest.json unless the manifest file exists by asking the user for `appName` and ACAP libraries to be used among vdo, storage, and overlay. Use the known-good minimal template in [Manifest file](#manifest-file-manifestjson) (`schemaVersion` 2.1.0, `vendorId`, and `compatibleOsVersions` with `min`/`max` set to the SDK major) so the first build isn't blocked by manifest defaults.
+- Generate a minimal manifest.json unless the manifest file exists, asking the user which ACAP libraries it will use among vdo, storage, and overlay. Use the known-good minimal template in [Manifest file](#manifest-file-manifestjson) (`schemaVersion` 2.1.0, `vendorId`, and `compatibleOsVersions` with `min`/`max` set to the SDK major) so the first build isn't blocked by manifest defaults.
 - Generate Makefile and Dockerfile with `VERSION` set to the SDK version the user gave: See [references/setup.md](references/setup.md)
 - **Write `app/LICENSE`.** `acap-build` refuses to package without it — it stops with
   `Could not find a readable LICENSE file`, after the compile has already succeeded, so it reads
@@ -113,15 +126,15 @@ feature code (see [Workflow](#workflow-skeleton-first-then-features)).
   syslog(LOG_INFO, "Hello World");   // read by view_log.sh
   printf("Hello World\n");           // captured into `output` by run.sh
   ```
-- Install the eap with `bash scripts/deploy.sh`. **Installing the app creates a dedicated SSH user for it on
-  the device** — this is exactly why the skeleton has to be installed before any SSH testing is
-  possible.
+- Install the eap with `bash scripts/deploy.sh`. **Installing the app creates a dedicated SSH user
+  for it on the device, named `acap-<appName>`** — this is exactly why the skeleton has to be
+  installed before any SSH testing is possible, and why `appName` is fixed up front.
 - Start the app and confirm the log shows 'Hello World' using `bash scripts/view_log.sh`. This goes
   over HTTP and needs no SSH yet, so it verifies the build/install/start path on its own.
   - If it fails, tell the user to look at `README` and check device access. If the issue is not
     device access, investigate what is wrong or missing based on the messages.
-- Set SSH password by using `bash scripts/setup_ssh.sh`. If some error happens, inform the user instead of investing it. Just make sure the user confirm the contents in `.env` are correct, especially, if `APP_NAME` matches `appName`. DO NOT touch `.env`.
-  - If the issue remains, ask the user to confirm on the device that the app's SSH user was created. If not, ask the user make sure that **Developer Mode** is configured correctly.
+- Set SSH password by using `bash scripts/setup_ssh.sh <appName>`. If some error happens, inform the user instead of investigating it. Just ask the user to confirm the contents of `.env` are correct — `DEVICE`, `WEB_USER`/`WEB_PASS`, `SSH_PASS`. DO NOT touch `.env`.
+  - If the issue remains, ask the user to confirm on the device that the SSH user `acap-<appName>` was created. If not, ask the user make sure that **Developer Mode** is configured correctly.
 - Once SSH password is set successfully, verify SSH execution: run the installed binary over SSH
   with `bash scripts/run.sh <appName> <appName>` and check that the `output` file contains
   'Hello World'. When this passes, the project environment is ready for development and testing.
