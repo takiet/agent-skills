@@ -6,24 +6,32 @@ via VAPIX `param.cgi`. Changes can be observed via callbacks.
 
 **API specification:** https://developer.axis.com/acap/acap-native-sdk-version-12/api/src/api/axparameter/html/index.html
 
-## Build & manifest
+## Build Requirements
+
+### Makefile
 
 ```make
 PKGS = glib-2.0 gio-2.0 axparameter
 ```
 
+### Source files
+
 ```c
 #include <axsdk/axparameter.h>
 ```
 
-Declare parameters under `acapPackageConf.configuration.paramConfig`:
+### manifest.json
+declare parameters under `acapPackageConf.configuration.paramConfig`. Note this goes inside
+`acapPackageConf`, **not** in the top-level `resources`:
 
 ```json
-"configuration": {
-  "paramConfig": [
-    { "name": "IsCustomized", "default": "no",  "type": "bool:no,yes" },
-    { "name": "BackupValue",  "default": "...",  "type": "hidden:string" }
-  ]
+"acapPackageConf": {
+  "configuration": {
+    "paramConfig": [
+      { "name": "IsCustomized", "default": "no",  "type": "bool:no,yes" },
+      { "name": "BackupValue",  "default": "...",  "type": "hidden:string" }
+    ]
+  }
 }
 ```
 

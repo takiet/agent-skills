@@ -6,11 +6,15 @@ un-encoded (NV12/YUV, Y800, RGB) frames from a sensor channel.
 
 **API specification:** https://developer.axis.com/acap/acap-native-sdk-version-12/api/src/api/vdostream/html/index.html
 
-## Build & manifest
+## Build Requirements
+
+### Makefile
 
 ```make
 PKGS = gio-2.0 gio-unix-2.0 vdostream
 ```
+
+### Source files
 
 ```c
 #include <vdo-stream.h>
@@ -19,10 +23,13 @@ PKGS = gio-2.0 gio-unix-2.0 vdostream
 #include <vdo-error.h>
 ```
 
-`manifest.json` — the app user must belong to the `video` group:
+### manifest.json
+the app user must belong to the `video` group:
 
 ```json
-"resources": { "linux": { "user": { "groups": ["video"] } } }
+"resources": {
+  "linux": { "user": { "groups": ["video"] } }
+}
 ```
 
 ## Core objects

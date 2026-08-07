@@ -6,23 +6,30 @@ standard `GIOChannel` on the port's file descriptor.
 
 **API specification:** https://developer.axis.com/acap/acap-native-sdk-version-12/api/src/api/axserialport/html/index.html
 
-## Build & manifest
+## Build Requirements
+
+### Makefile
 
 ```make
 PKGS = glib-2.0 axserialport
 ```
 
+### Source files
+
 ```c
 #include <axsdk/axserialport.h>
 ```
-
-`manifest.json` — needs elevated privileges (the example uses the `admin` group):
-
-```json
-"resources": { "linux": { "user": { "groups": ["admin"] } } }
-```
 Requires a running `GMainLoop`. Available settings are product-dependent — check the device
 datasheet.
+
+### manifest.json
+needs elevated privileges (the example uses the `admin` group):
+
+```json
+"resources": {
+  "linux": { "user": { "groups": ["admin"] } }
+}
+```
 
 ## Core object
 

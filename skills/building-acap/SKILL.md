@@ -244,6 +244,7 @@ confusing install/build failures:
 ```json
 {
   "schemaVersion": "2.1.0",
+  "resources": {},               # empty on purpose — the slot each API fills later
   "acapPackageConf": {
     "setup": {
       "appName": "hello_world",
@@ -269,19 +270,20 @@ Field notes:
 - **`runMode`** — `once` runs the app a single time when started, which suits a Hello World
   skeleton. Other options: `respawn` (kept running) or `never` (not started automatically).
 
-Per-API declarations go under a **top-level `resources` key** — a sibling of `acapPackageConf`, not nested inside it. Group settings live at `resources.linux.user.groups` (not a top-level `linux.user.groups`), D-Bus methods at `resources.dbus.requiredMethods`, and so on. The table below lists each API's requirement using that full path. Placement relative to `acapPackageConf`:
+- **`resources`** — start it as an empty object `{}` and leave it there. The skeleton needs no
+  resources, but the key is where every API declaration will go, and creating it up front at the
+  correct nesting level is what stops the most common manifest error: `resources` written *inside*
+  `acapPackageConf` instead of beside it. With the slot already open you are filling in an
+  existing object rather than deciding where to put a new one. Keep it empty until a feature
+  actually needs something — an unused declaration is one more thing that can stop the app from
+  starting.
 
-```json
-{
-  "schemaVersion": "2.1.0",
-  "resources": {
-    "linux": { "user": { "groups": ["video"] } }
-  },
-  "acapPackageConf": {
-    "setup": { "appName": "hello_world" }
-  }
-}
-```
+Per-API declarations therefore go **into that top-level `resources` object**, a sibling of
+`acapPackageConf`. Group settings live at `resources.linux.user.groups` (not a top-level
+`linux.user.groups`), D-Bus methods at `resources.dbus.requiredMethods`, and so on. Each
+reference file gives only the fragment that belongs inside `resources`; merge it into the empty
+object rather than pasting a second `resources` key. The table below lists each API's requirement
+using that full path.
 
 ### Available APIs
 

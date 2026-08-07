@@ -16,11 +16,15 @@ overlay system composites onto matching streams.
 **Official example:** [axoverlay2-skia](https://github.com/AxisCommunications/acap-native-sdk-examples/tree/main/axoverlay2-skia)
 — the reference implementation, and the one to copy build configuration from.
 
-## Build & manifest
+## Build Requirements
+
+### Makefile
 
 ```make
 PKGS = gio-2.0 glib-2.0 cairo vdostream axoverlay2
 ```
+
+### Source files
 
 ```c
 #include <axoverlay2.h>
@@ -28,10 +32,13 @@ PKGS = gio-2.0 glib-2.0 cairo vdostream axoverlay2
 #include <vdo-stream.h>    // to discover streams
 ```
 
-`manifest.json` — declare the overlay resource:
+### manifest.json
+declare the overlay resource:
 
 ```json
-"resources": { "overlay": { "enabled": true, "required": true } }
+"resources": {
+  "overlay": { "enabled": true, "required": true }
+}
 ```
 
 If you render on the GPU (see [GPU path](#gpu-path--zero-copy-via-dma-buf)), you also need the

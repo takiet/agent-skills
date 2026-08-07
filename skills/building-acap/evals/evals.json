@@ -4,12 +4,13 @@
     {
       "id": 1,
       "prompt": "I'm starting a brand-new ACAP app from scratch on my Axis camera (ARTPEC-9, ACAP SDK 12.11.0) — the repo is completely empty. Call it object_detector; eventually it'll run a YOLOv5 model, but right now I just want the project standing up and proven to actually run on the device. Docker build producing the .eap, the manifest, the Makefiles, installed and logging on the camera. Can you set that up?",
-      "expected_output": "A verified walking skeleton and nothing more: Dockerfile + root Makefile pinned to SDK 12.11.0, a minimal manifest.json (schemaVersion 2.1.0, compatibleOsVersions min/max 12, no resource declarations the skeleton doesn't use), an app/Makefile deriving appName from the manifest, and an app that only logs 'Hello World'. Driven through build -> install -> start -> log check, then SSH setup handed to the user and, once they confirm, verified by running the installed binary over SSH. No VDO/Larod/overlay code written.",
+      "expected_output": "A verified walking skeleton and nothing more: Dockerfile + root Makefile pinned to SDK 12.11.0, a minimal manifest.json (schemaVersion 2.1.0, compatibleOsVersions min/max 12, and an empty top-level \"resources\": {} holding no declarations the skeleton doesn't use), an app/Makefile deriving appName from the manifest, and an app that only logs 'Hello World'. Driven through build -> install -> start -> log check, then SSH setup handed to the user and, once they confirm, verified by running the installed binary over SSH. No VDO/Larod/overlay code written.",
       "files": [],
       "expectations": [
         "Builds only a Hello World walking skeleton — no VDO, Larod or overlay feature code is written, even though the prompt names YOLOv5 as the eventual goal",
         "manifest.json uses schemaVersion 2.1.0 and compatibleOsVersions with both min and max set to 12 (the SDK 12.11.0 major)",
-        "manifest.json declares no resources the skeleton does not use — no video group, no deepLearningProcessor, no overlay — since resource declarations are added alongside the code that needs them",
+        "manifest.json has a top-level \"resources\" key, a sibling of \"acapPackageConf\", present as an empty object {} — the slot each API declaration will later be merged into",
+        "That \"resources\" object is empty: the skeleton declares no video group, no deepLearningProcessor and no overlay, since resource declarations are added alongside the code that needs them",
         "appName is identical across manifest.json, the main source filename, and the built binary",
         "Dockerfile and root Makefile pin VERSION to the 12.11.0 the user gave, and default ARCH to aarch64",
         "app/Makefile derives PROG from manifest.json with jq rather than hardcoding the name in a second place",
