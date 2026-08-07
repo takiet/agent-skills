@@ -105,7 +105,7 @@ free to pick now and expensive to revise once the app is installed:
 
 | Value | Where it lands | Cost of changing it later |
 |---|---|---|
-| `appName` | `<appName>.c`, the binary, `manifest.json`, `/usr/local/packages/<appName>/`, and the SSH user `acap-<appName>` | A full reinstall: the old app's SSH user is stranded on the device and `bash scripts/setup_ssh.sh <appName>` has to run again |
+| `appName` | `manifest.json`, the built binary, `/usr/local/packages/<appName>/`, and the SSH user `acap-<appName>` — but *not* any source filename | A full reinstall: the old app's SSH user is stranded on the device and `bash scripts/setup_ssh.sh <appName>` has to run again |
 | `vendorId` | `manifest.json` | Overwrite-install of the same `appName` stops with `Error: 27` |
 
 Ask the user for `appName` if they haven't given one. ASCII letters, digits and underscore `_` only.
@@ -153,7 +153,7 @@ project-root/
     ├── manifest.json
     ├── Makefile           <- For compiling C/C++ applications
     ├── LICENSE            <- License information including third party libraries
-    ├── <appName>.c        <- main: appName must match with manifest.json (.cc for C++)
+    ├── main.c             <- holds main(); always this name (.cc for C++), never <appName>.c
     ├── <feature>.c        <- app-dependent: individual modules/features
     ├── test_<feature>.c   <- app-dependent: test binaries (needs acap-build -a)
     └── models/            <- app-dependent: model + labels (needs acap-build -a)
@@ -162,6 +162,11 @@ project-root/
 The app-dependent entries arrive with the feature that needs them. `acap-build` packages only the
 app binary, so each also needs an `-a` flag — and test binaries need building as well, via the
 `all` target of `app/Makefile`. See [references/setup.md](references/setup.md).
+
+Note the split between the two names: the **binary** is `<appName>` and must match the manifest,
+while the **source holding `main()`** is always `main.c`. `app/Makefile` links `main.c` into
+`$(PROG)`, which it reads from `manifest.json` with `jq`, so the app's name lives in exactly one
+place and renaming it never touches a filename.
 
 ### Setup Verification
 
@@ -188,7 +193,8 @@ is checked — an unchecked box means the environment, not your future feature, 
 ### Build command
 
 Make sure the following points
-* `appName` matches the value in `manifest.json`, the source file name (.c), and the binary name.
+* The built binary is named `appName` and matches `manifest.json`. The entry-point source stays
+  `main.c` / `main.cc`; `app/Makefile` bridges the two via `$(PROG)`.
 * Certain APIs (such as Larod and Overlay) require the corresponding resources declarations in `manifest.json`; otherwise, the application will fail to start.
 
 ```bash
@@ -284,9 +290,13 @@ Field notes:
   *that* one. So the packaged manifest inside the `.eap` reads `2.2.0` on SDK 12.11.x even though
   you wrote `2.1.0` — that is the normaliser, not a corrupted package. Writing `1.3` is a real
   difference, though: it selects the v1 schema family, which behaves differently.
-- **`appName`** — must match the binary and the `.c` source file names exactly.
-- **`vendorId`** — the integer ID Axis assigns to a registered vendor; `0` is fine as a
-  placeholder for local development, set your real ID before distribution.
+- **`appName`** — must match the built binary exactly. It does *not* name a source file: `main()`
+  lives in `main.c` / `main.cc`, and `app/Makefile` derives the binary name from this field.
+- **`vendorId`** — a **string of exactly 10 hexadecimal digits**, case sensitive, issued by the
+  ACAP Service Portal (schema: `"pattern": "^[A-Fa-f0-9]{10}$"`). A short placeholder like `0`, or
+  an unquoted number, fails validation — use a full 10-digit dummy such as `"0123456ABC"` for local
+  development and set your real ID before distribution. Keep it fixed for the life of the project:
+  changing it breaks overwrite-install with `Error: 27`.
 - **`compatibleOsVersions`** — always an object with both `min` and `max`, set to the **SDK major
   version** you asked the user for at setup: e.g. SDK `12.11.x` → `min` and `max` both `12`.
   Omitting either, or a mismatched range, is a frequent cause of install failures. Keep this major

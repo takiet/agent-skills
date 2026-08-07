@@ -53,5 +53,5 @@ skills  -> (SKILL.md per directory)
 
 ## Domain notes (building-acap skill)
 
-- ACAP apps are C applications cross-compiled in Docker for `aarch64` (default) or `armv7hf`, producing an `.eap` package. `appName` must be identical across `manifest.json`, the `.c` source filename, and the binary.
+- ACAP apps are C applications cross-compiled in Docker for `aarch64` (default) or `armv7hf`, producing an `.eap` package. `appName` must be identical in `manifest.json` and the built binary. It is *not* a source filename: `main()` lives in `main.c` / `main.cc`, and `app/Makefile` links it into `$(PROG)`, read from the manifest with `jq`.
 - The most common runtime failure is a missing per-API declaration in `manifest.json` (e.g. `video` user group for VDO/Larod, D-Bus methods for Bounding Box). The API table in `SKILL.md` is the authoritative checklist.

@@ -12,7 +12,7 @@
         "manifest.json omits \"resources\" entirely — the schema sets minProperties: 1 on it, so an empty {} fails validation and the first build breaks",
         "The skeleton declares no video group, no deepLearningProcessor and no overlay anywhere, since resource declarations are added alongside the code that needs them",
         "make build succeeds on the first attempt, with no manifest schema validation error to recover from",
-        "appName is identical across manifest.json, the main source filename, and the built binary",
+        "The built binary is named appName and matches manifest.json, while the source holding main() is main.c (or main.cc) rather than <appName>.c",
         "Dockerfile and root Makefile pin VERSION to the 12.11.0 the user gave, and default ARCH to aarch64",
         "app/Makefile derives PROG from manifest.json with jq rather than hardcoding the name in a second place",
         "Drives the pipeline in order: make build -> deploy.sh to install -> control.sh start -> view_log.sh showing 'Hello World'",
