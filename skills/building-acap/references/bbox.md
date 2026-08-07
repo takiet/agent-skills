@@ -13,17 +13,22 @@ results (from [larod.md](larod.md)) — when rectangles, quads and lines are all
 
 **API specification:** https://developer.axis.com/acap/acap-native-sdk-version-12/api/src/api/bbox/html/index.html
 
-## Build & manifest
+## Build Requirements
+
+### Makefile
 
 ```make
 PKGS = bbox
 ```
 
+### Source files
+
 ```c
 #include <bbox.h>
 ```
 
-`manifest.json` — needs the graphics/overlay D-Bus methods and the `video` group:
+### manifest.json
+needs the graphics/overlay D-Bus methods and the `video` group:
 
 ```json
 "resources": {

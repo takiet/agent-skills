@@ -6,11 +6,9 @@ valid license is not installed.
 
 **API specification:** https://developer.axis.com/acap/acap-native-sdk-version-12/api/src/api/licensekey/html/index.html
 
-## Build & manifest
+## Build Requirements
 
-```c
-#include <licensekey.h>
-```
+### Makefile
 
 Linking is special — the license-check symbol is provided partly statically:
 
@@ -19,7 +17,15 @@ PKGS   = glib-2.0
 LDLIBS += -Wl,-Bstatic,-llicensekey_stat,-Bdynamic,-llicensekey -ldl
 ```
 
-`manifest.json` — enable Axis copy protection and set the `appId`:
+### Source files
+
+```c
+#include <licensekey.h>
+```
+
+### manifest.json
+enable Axis copy protection and set the `appId`. Like AXParameter, this goes inside
+`acapPackageConf`, **not** in the top-level `resources`:
 
 ```json
 "acapPackageConf": {

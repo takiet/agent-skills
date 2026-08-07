@@ -19,7 +19,7 @@ For other tools, see the [top-level README](../../README.md#installing-in-other-
 
 ## Prerequisites
 
-- An **Axis device** reachable over the network, with **Developer Mode** enabled (this is what
+- An **Axis device** reachable over the network, with [**Developer Mode**](https://developer.axis.com/acap/get-started/set-up-developer-environment/set-up-device-advanced/#developer-mode) enabled (this is what
   creates the app's dedicated SSH user on install).
 - **Docker** — the SDK is not installed on the host; the app is cross-compiled in a container.
 - **`curl`**, **`ssh`** and **`sshpass`** on the host, used by the scripts below.
@@ -36,11 +36,13 @@ cp .env.example <your-acap-project>/.env
 | Variable | Meaning |
 |---|---|
 | `DEVICE` | Device host name or IP address |
-| `APP_NAME` | Application name; must match `appName` in `manifest.json` |
 | `WEB_USER` | Account name for accessing the device via web / VAPIX |
 | `WEB_PASS` | Password for the above |
-| `SSH_USER` | SSH user name. Created automatically from `APP_NAME` on install — normally no need to edit |
 | `SSH_PASS` | SSH password used during development; set it on the device with `setup_ssh.sh` |
+
+The application name is deliberately *not* in here — it is passed to each script as an argument
+instead, so one `.env` serves every project on the device. Installing an app creates its dedicated
+SSH user as `acap-<appName>`, and the scripts derive that name from the argument you give them.
 
 `.env` holds real credentials, so it is gitignored — keep it out of version control, and note
 that the skill instructs Claude never to read or write it.
@@ -51,6 +53,10 @@ that the skill instructs Claude never to read or write it.
 > reinstalled, and prompting on every change would break automated testing. The trade-off is that
 > you lose protection against man-in-the-middle (host impersonation) attacks, so only use these
 > scripts against devices on a trusted network.
+>
+> Every run therefore prints `Warning: Permanently added '<host>' (ECDSA) to the list of known
+> hosts.` Nothing is actually stored — the list is `/dev/null` — which is why the warning never
+> stops appearing. It goes to stderr, so it does not contaminate the `output` file.
 
 ## Scripts
 
@@ -61,7 +67,7 @@ drifted rather than anything being wrong with the device.
 | Script | Purpose |
 |---|---|
 | `bash scripts/deploy.sh <file>.eap` | Upload and install the package on the device |
-| `bash scripts/setup_ssh.sh` | Set the password of the app's dedicated SSH user. Run once after the first install |
+| `bash scripts/setup_ssh.sh <appName>` | Set the password of the app's `acap-<appName>` SSH user. Run once after the first install |
 | `bash scripts/control.sh <appName> start\|stop\|restart\|remove` | Control the installed app |
 | `bash scripts/run.sh <appName> <binary> [-a "args"]` | Run a binary from the installed package over SSH; stdout is captured to the `output` file |
 | `bash scripts/view_log.sh <binary-name>` | Show the syslog output for an app or test binary |

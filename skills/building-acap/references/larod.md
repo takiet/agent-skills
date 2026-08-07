@@ -6,17 +6,22 @@ through a background service.
 
 **API specification:** https://developer.axis.com/acap/acap-native-sdk-version-12/api/src/api/larod/html/index.html
 
-## Build & manifest
+## Build Requirements
+
+### Makefile
 
 ```make
 PKGS = gio-2.0 gio-unix-2.0 liblarod vdostream
 ```
 
+### Source files
+
 ```c
 #include "larod.h"
 ```
 
-`manifest.json` — request `video` group and (on DLPU chips) the deep-learning processor:
+### manifest.json
+request `video` group and (on DLPU chips) the deep-learning processor:
 
 ```json
 "resources": {

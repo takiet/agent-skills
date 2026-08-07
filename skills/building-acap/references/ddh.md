@@ -7,18 +7,23 @@ replacement for the (deprecated) Message Broker API.
 
 **API specification:** https://developer.axis.com/acap/acap-native-sdk-version-12/api/src/api/device-data-hub/html/index.html
 
-## Build & manifest
+## Build Requirements
+
+### Makefile
 
 ```make
 PKGS = device-data-hub-client-c
 ```
+
+### Source files
 
 ```c
 #include <datahub/client.h>       // producer + common
 #include <datahub/subscriber.h>   // consumer
 ```
 
-`manifest.json` — enable the resource and declare an **access-control list**. ACL usernames are
+### manifest.json
+enable the resource and declare an **access-control list**. ACL usernames are
 `acap-<appName>` of the peer apps that may read/write your topic:
 
 ```json

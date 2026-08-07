@@ -6,17 +6,24 @@ triggers), **stateful/property** events (a value with a current state), and **da
 
 **API specification:** https://developer.axis.com/acap/acap-native-sdk-version-12/api/src/api/axevent/html/index.html
 
-## Build & manifest
+## Build Requirements
+
+### Makefile
 
 ```make
 PKGS = glib-2.0 axevent
 ```
 
+### Source files
+
 ```c
 #include <axsdk/axevent.h>
 ```
-No special `manifest.json` resource is required. Axevent is built on GLib and needs a running
-`GMainLoop`.
+Axevent is built on GLib and needs a running `GMainLoop`.
+
+### manifest.json
+Nothing required — Axevent needs no `resources` entry and no group membership. The minimal
+skeleton manifest works as-is.
 
 ## Core objects
 

@@ -62,8 +62,10 @@ points somewhere else:
 - **`scripts/deploy.sh`** -- Deploy the app (eap file) to the device
   - Arguments:
     - A eap filename (.eap)
-- **`scripts/setup_ssh.sh`** -- Set the password of the app's dedicated SSH user, so `run.sh` can
-  log in. Run once after the first install; takes no arguments.
+- **`scripts/setup_ssh.sh`** -- Set the password of the app's dedicated SSH user (`acap-<appName>`),
+  so `run.sh` can log in. Run once after the first install.
+  - Arguments:
+    - `appName`
 - **`scripts/control.sh`** -- Start, Stop, Restart, or Remove the app
   - Arguments:
     - `appName`
@@ -95,11 +97,22 @@ These cost real time and none of them announce themselves clearly:
 ## Set up a project
 
 **Phase 1 — the walking skeleton.** Complete this and pass Setup Verification before writing any
-feature code (see [Workflow](#workflow-skeleton-first-then-features)).
+feature code (see [Workflow](#workflow-skeleton-first-then-features)). It starts by fixing
+`appName` and `vendorId`.
+
+Two values are chosen here and then never change. Settle both before generating any file — each is
+free to pick now and expensive to revise once the app is installed:
+
+| Value | Where it lands | Cost of changing it later |
+|---|---|---|
+| `appName` | `manifest.json`, the built binary, `/usr/local/packages/<appName>/`, and the SSH user `acap-<appName>` — but *not* any source filename | A full reinstall: the old app's SSH user is stranded on the device and `bash scripts/setup_ssh.sh <appName>` has to run again |
+| `vendorId` | `manifest.json` | Overwrite-install of the same `appName` stops with `Error: 27` |
+
+Ask the user for `appName` if they haven't given one. ASCII letters, digits and underscore `_` only.
 
 - Ask the user for the target **ACAP SDK version** (e.g. `12.11.0`). It feeds two places: the
   build `VERSION` (Makefile/Dockerfile) and the manifest `compatibleOsVersions` (its major).
-- Generate a minimal manifest.json unless the manifest file exists by asking the user for `appName` and ACAP libraries to be used among vdo, storage, and overlay. Use the known-good minimal template in [Manifest file](#manifest-file-manifestjson) (`schemaVersion` 2.1.0, `vendorId`, and `compatibleOsVersions` with `min`/`max` set to the SDK major) so the first build isn't blocked by manifest defaults.
+- Generate a minimal manifest.json unless the manifest file exists, asking the user which ACAP libraries it will use among vdo, storage, and overlay. Use the known-good minimal template in [Manifest file](#manifest-file-manifestjson) (`schemaVersion` 2.1.0, `vendorId`, and `compatibleOsVersions` with `min`/`max` set to the SDK major) so the first build isn't blocked by manifest defaults.
 - Generate Makefile and Dockerfile with `VERSION` set to the SDK version the user gave: See [references/setup.md](references/setup.md)
 - **Write `app/LICENSE`.** `acap-build` refuses to package without it — it stops with
   `Could not find a readable LICENSE file`, after the compile has already succeeded, so it reads
@@ -113,15 +126,15 @@ feature code (see [Workflow](#workflow-skeleton-first-then-features)).
   syslog(LOG_INFO, "Hello World");   // read by view_log.sh
   printf("Hello World\n");           // captured into `output` by run.sh
   ```
-- Install the eap with `bash scripts/deploy.sh`. **Installing the app creates a dedicated SSH user for it on
-  the device** — this is exactly why the skeleton has to be installed before any SSH testing is
-  possible.
+- Install the eap with `bash scripts/deploy.sh`. **Installing the app creates a dedicated SSH user
+  for it on the device, named `acap-<appName>`** — this is exactly why the skeleton has to be
+  installed before any SSH testing is possible, and why `appName` is fixed up front.
 - Start the app and confirm the log shows 'Hello World' using `bash scripts/view_log.sh`. This goes
   over HTTP and needs no SSH yet, so it verifies the build/install/start path on its own.
   - If it fails, tell the user to look at `README` and check device access. If the issue is not
     device access, investigate what is wrong or missing based on the messages.
-- Set SSH password by using `bash scripts/setup_ssh.sh`. If some error happens, inform the user instead of investing it. Just make sure the user confirm the contents in `.env` are correct, especially, if `APP_NAME` matches `appName`. DO NOT touch `.env`.
-  - If the issue remains, ask the user to confirm on the device that the app's SSH user was created. If not, ask the user make sure that **Developer Mode** is configured correctly.
+- Set SSH password by using `bash scripts/setup_ssh.sh <appName>`. If some error happens, inform the user instead of investigating it. Just ask the user to confirm the contents of `.env` are correct — `DEVICE`, `WEB_USER`/`WEB_PASS`, `SSH_PASS`. DO NOT touch `.env`.
+  - If the issue remains, ask the user to confirm on the device that the SSH user `acap-<appName>` was created. If not, ask the user make sure that **Developer Mode** is configured correctly.
 - Once SSH password is set successfully, verify SSH execution: run the installed binary over SSH
   with `bash scripts/run.sh <appName> <appName>` and check that the `output` file contains
   'Hello World'. When this passes, the project environment is ready for development and testing.
@@ -140,7 +153,7 @@ project-root/
     ├── manifest.json
     ├── Makefile           <- For compiling C/C++ applications
     ├── LICENSE            <- License information including third party libraries
-    ├── <appName>.c        <- main: appName must match with manifest.json (.cc for C++)
+    ├── main.c             <- holds main(); always this name (.cc for C++), never <appName>.c
     ├── <feature>.c        <- app-dependent: individual modules/features
     ├── test_<feature>.c   <- app-dependent: test binaries (needs acap-build -a)
     └── models/            <- app-dependent: model + labels (needs acap-build -a)
@@ -149,6 +162,11 @@ project-root/
 The app-dependent entries arrive with the feature that needs them. `acap-build` packages only the
 app binary, so each also needs an `-a` flag — and test binaries need building as well, via the
 `all` target of `app/Makefile`. See [references/setup.md](references/setup.md).
+
+Note the split between the two names: the **binary** is `<appName>` and must match the manifest,
+while the **source holding `main()`** is always `main.c`. `app/Makefile` links `main.c` into
+`$(PROG)`, which it reads from `manifest.json` with `jq`, so the app's name lives in exactly one
+place and renaming it never touches a filename.
 
 ### Setup Verification
 
@@ -175,14 +193,20 @@ is checked — an unchecked box means the environment, not your future feature, 
 ### Build command
 
 Make sure the following points
-* `appName` matches the value in `manifest.json`, the source file name (.c), and the binary name.
+* The built binary is named `appName` and matches `manifest.json`. The entry-point source stays
+  `main.c` / `main.cc`; `app/Makefile` bridges the two via `$(PROG)`.
 * Certain APIs (such as Larod and Overlay) require the corresponding resources declarations in `manifest.json`; otherwise, the application will fail to start.
 
 ```bash
 make build               # aarch64
 make ARCH=armv7hf build  # armv7hf
-# build: build/<appName>.eap
+# build: build/<appName>_<version with underscores>_<arch>.eap
+#        e.g. build/hello_world_1_0_0_aarch64.eap
 ```
+
+`deploy.sh` takes that filename literally, so don't type it from memory — `ls build/*.eap` and pass
+what's actually there. `build/` also holds the app sources and `package.conf` that the Dockerfile
+export copies out alongside the `.eap`, so the glob is the reliable way to pick it out.
 
 ### Unit / function testing
 
@@ -244,6 +268,9 @@ confusing install/build failures:
 ```json
 {
   "schemaVersion": "2.1.0",
+                                 # "resources" goes HERE when the first API needs it —
+                                 # a sibling of acapPackageConf, never inside it.
+                                 # Omit it entirely while the skeleton declares nothing.
   "acapPackageConf": {
     "setup": {
       "appName": "hello_world",
@@ -258,30 +285,43 @@ confusing install/build failures:
 ```
 
 Field notes:
-- **`schemaVersion`** — use `2.1.0`. Older values like `1.3` are outdated and behave differently.
-- **`appName`** — must match the binary and the `.c` source file names exactly.
-- **`vendorId`** — the integer ID Axis assigns to a registered vendor; `0` is fine as a
-  placeholder for local development, set your real ID before distribution.
+- **`schemaVersion`** — use `2.1.0`. Only the **major** actually matters: `acap-build` normalises
+  the value to the newest schema of the same major that the SDK ships, then validates against
+  *that* one. So the packaged manifest inside the `.eap` reads `2.2.0` on SDK 12.11.x even though
+  you wrote `2.1.0` — that is the normaliser, not a corrupted package. Writing `1.3` is a real
+  difference, though: it selects the v1 schema family, which behaves differently.
+- **`appName`** — must match the built binary exactly. It does *not* name a source file: `main()`
+  lives in `main.c` / `main.cc`, and `app/Makefile` derives the binary name from this field.
+- **`vendorId`** — a **string of exactly 10 hexadecimal digits**, case sensitive, issued by the
+  ACAP Service Portal (schema: `"pattern": "^[A-Fa-f0-9]{10}$"`). A short placeholder like `0`, or
+  an unquoted number, fails validation — use a full 10-digit dummy such as `"0123456ABC"` for local
+  development and set your real ID before distribution. Keep it fixed for the life of the project:
+  changing it breaks overwrite-install with `Error: 27`.
 - **`compatibleOsVersions`** — always an object with both `min` and `max`, set to the **SDK major
   version** you asked the user for at setup: e.g. SDK `12.11.x` → `min` and `max` both `12`.
   Omitting either, or a mismatched range, is a frequent cause of install failures. Keep this major
   in sync with the SDK version used for the build (Makefile/Dockerfile `VERSION`).
+  `acap-build` then warns that `min` is *below the SDK's minimum AXIS OS version* (e.g. `12.11.72`).
+  That warning is expected and the value is left alone — it only fills `min` in when you omitted it.
+  Don't silence it by raising `min` to the SDK's full version: that would stop the app installing
+  on every 12.x device older than the SDK, which is the opposite of what the range is for.
 - **`runMode`** — `once` runs the app a single time when started, which suits a Hello World
   skeleton. Other options: `respawn` (kept running) or `never` (not started automatically).
 
-Per-API declarations go under a **top-level `resources` key** — a sibling of `acapPackageConf`, not nested inside it. Group settings live at `resources.linux.user.groups` (not a top-level `linux.user.groups`), D-Bus methods at `resources.dbus.requiredMethods`, and so on. The table below lists each API's requirement using that full path. Placement relative to `acapPackageConf`:
+- **`resources`** — leave it out of the skeleton entirely, and add it when the first API needs a
+  declaration. The schema makes this the only working choice: `resources` is not in the manifest's
+  required list, so omitting it is fine, but it carries `minProperties: 1`, so writing it as an
+  empty `{}` fails validation. `acap-build` reports that as
+  `{} does not have enough properties` under a 60-line schema dump, after the compile has already
+  succeeded — it reads like a toolchain fault rather than a manifest one.
 
-```json
-{
-  "schemaVersion": "2.1.0",
-  "resources": {
-    "linux": { "user": { "groups": ["video"] } }
-  },
-  "acapPackageConf": {
-    "setup": { "appName": "hello_world" }
-  }
-}
-```
+When you do add it, `resources` is a **sibling of `acapPackageConf`, not a key inside it** — that
+misplacement is the most common manifest error, and the schema rejects it too. Group settings live
+at `resources.linux.user.groups` (not a top-level `linux.user.groups`), D-Bus methods at
+`resources.dbus.requiredMethods`, and so on. Each reference file gives only the fragment that
+belongs inside `resources`, written from `"resources": {` down, so the first API you add creates
+the object and every later one merges into it rather than pasting a second `resources` key. The
+table below lists each API's requirement using that full path.
 
 ### Available APIs
 

@@ -13,22 +13,30 @@
 `VERSION` is the ACAP SDK version you asked the user for at setup; its major must match
 `compatibleOsVersions.min`/`max` in `manifest.json`.
 
+> Recipe lines in every Makefile below must be indented with a **TAB**, not spaces. `make` reports
+> a space-indented recipe as `*** missing separator.  Stop.`, which says nothing about indentation
+> — so check this first if a copied Makefile refuses to run at all.
+
 ```makefile
+# VERSION is the ACAP SDK version chosen at setup. Keep the comment on its own
+# line: make keeps the spaces between a value and a trailing `#`, so writing
+# `VERSION ?= 12.11.0   # ...` puts those spaces inside VERSION itself.
 ARCH        ?= aarch64
-VERSION     ?= 12.11.0   # ACAP SDK version chosen at setup
-OUTPUT_DIR  := build 
+VERSION     ?= 12.11.0
+OUTPUT_DIR  := build
 
 .PHONY: build clean
 
 build:
-        DOCKER_BUILDKIT=1 docker build \
-          --build-arg ARCH=$(ARCH) \
-          --build-arg VERSION=$(VERSION) \
-          --target export \
-          --output type=local,dest=$(OUTPUT_DIR) \
-          .
+	DOCKER_BUILDKIT=1 docker build \
+	  --build-arg ARCH=$(ARCH) \
+	  --build-arg VERSION=$(VERSION) \
+	  --target export \
+	  --output type=local,dest=$(OUTPUT_DIR) \
+	  .
+
 clean:
-        rm -rf $(OUTPUT_DIR)
+	rm -rf $(OUTPUT_DIR)
 ```
 
 ## Baseline Dockerfile (Multi stage)
@@ -43,10 +51,17 @@ COPY app /opt/app/
 WORKDIR /opt/app
 RUN . /opt/axis/acapsdk/environment-setup* && acap-build ./
 
-# Extract only `.eap` file with no unnecessary layer left
+# Export the build output with no unnecessary layer left. This copies the whole
+# app directory, so `build/` ends up holding the sources and `package.conf`
+# beside the `.eap` — glob `build/*.eap` rather than assuming it is alone there.
 FROM scratch AS export
 COPY --from=builder /opt/app/* /
 ```
+
+On an Apple Silicon host every build ends with
+`InvalidBaseImagePlatform: ... was pulled with platform "linux/amd64", expected "linux/arm64"`.
+The SDK image is amd64-only and runs under emulation; the cross-compiler still emits a genuine
+`aarch64` binary. Expected, and there is nothing to fix.
 
 ## Packaging extra files into the eap
 
@@ -77,13 +92,16 @@ Extract `appName` from `manifest.json` with `jq` so the binary name can never dr
 manifest — a mismatch there is one of the most common causes of an app that installs but won't
 start.
 
-> Recipe lines must be indented with a **TAB**, not spaces.
+The file holding `main()` is always **`main.c`** (or `main.cc`), never `<appName>.c`. What has to
+carry the app's name is the *binary*, and `$(PROG)` supplies that at link time, so the source
+filename is free to be a constant. That keeps a rename confined to `manifest.json` instead of also
+touching a filename, an `#include`, and every `SRCS` line that mentions it.
 
 ### C
 
 ```makefile
 PROG      = $(shell jq -r '.acapPackageConf.setup.appName' manifest.json)
-OBJS      = $(PROG).c
+SRCS      = main.c
 DEBUG_DIR = debug
 
 PKGS  = gio-2.0 gio-unix-2.0 vdostream
@@ -95,7 +113,7 @@ LDLIBS += $(shell PKG_CONFIG_PATH=$(PKG_CONFIG_PATH) pkg-config --libs $(PKGS))
 
 all: $(PROG)
 
-$(PROG): $(OBJS)
+$(PROG): $(SRCS)
 	install -d $(DEBUG_DIR)
 	$(CC) $^ $(CFLAGS) $(LIBS) $(LDFLAGS) $(LDLIBS) -o $(DEBUG_DIR)/$@
 	cp $(DEBUG_DIR)/$@ .
@@ -113,13 +131,13 @@ things change beyond `CC` → `CXX`:
 - **Drop `-Wbad-function-cast`, `-Wstrict-prototypes` and `-Wmissing-prototypes`.** These are
   C-only options; a C++ compiler warns that they don't apply, and with `-Werror` that warning
   ends the build. It reads like a broken toolchain, but it's just three flags.
-- **List the sources explicitly.** `OBJS = $(PROG).c` only works for a single-file app. Once the
+- **List the sources explicitly.** `SRCS = main.c` only works for a single-file app. Once the
   code is split into feature modules, and once there are test binaries linking a subset of them,
   compile to objects and link each binary from the objects it needs.
 
 ```makefile
 PROG      = $(shell jq -r '.acapPackageConf.setup.appName' manifest.json)
-SRCS      = $(PROG).cc capture.cc detector.cc overlay.cc
+SRCS      = main.cc capture.cc detector.cc overlay.cc
 OBJS      = $(SRCS:.cc=.o)
 TESTS     = test_capture test_detect
 DEBUG_DIR = debug

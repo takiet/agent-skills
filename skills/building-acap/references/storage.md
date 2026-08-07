@@ -6,22 +6,29 @@ device and react to availability/writability/full/exiting events.
 
 **API specification:** https://developer.axis.com/acap/acap-native-sdk-version-12/api/src/api/axstorage/html/index.html
 
-## Build & manifest
+## Build Requirements
+
+### Makefile
 
 ```make
 PKGS = glib-2.0 gio-2.0 axstorage
 ```
 
+### Source files
+
 ```c
 #include <axsdk/axstorage.h>
 ```
+Requires a running `GMainLoop`.
 
-`manifest.json` — the app user must be in the `storage` group:
+### manifest.json
+the app user must be in the `storage` group:
 
 ```json
-"resources": { "linux": { "user": { "groups": ["storage"] } } }
+"resources": {
+  "linux": { "user": { "groups": ["storage"] } }
+}
 ```
-Requires a running `GMainLoop`.
 
 ## Core object & types
 
