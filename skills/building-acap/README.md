@@ -19,7 +19,7 @@ For other tools, see the [top-level README](../../README.md#installing-in-other-
 
 ## Prerequisites
 
-- An **Axis device** reachable over the network, with **Developer Mode** enabled (this is what
+- An **Axis device** reachable over the network, with [**Developer Mode**](https://developer.axis.com/acap/get-started/set-up-developer-environment/set-up-device-advanced/#developer-mode) enabled (this is what
   creates the app's dedicated SSH user on install).
 - **Docker** — the SDK is not installed on the host; the app is cross-compiled in a container.
 - **`curl`**, **`ssh`** and **`sshpass`** on the host, used by the scripts below.
