@@ -194,8 +194,13 @@ Make sure the following points
 ```bash
 make build               # aarch64
 make ARCH=armv7hf build  # armv7hf
-# build: build/<appName>.eap
+# build: build/<appName>_<version with underscores>_<arch>.eap
+#        e.g. build/hello_world_1_0_0_aarch64.eap
 ```
+
+`deploy.sh` takes that filename literally, so don't type it from memory — `ls build/*.eap` and pass
+what's actually there. `build/` also holds the app sources and `package.conf` that the Dockerfile
+export copies out alongside the `.eap`, so the glob is the reliable way to pick it out.
 
 ### Unit / function testing
 
@@ -257,7 +262,9 @@ confusing install/build failures:
 ```json
 {
   "schemaVersion": "2.1.0",
-  "resources": {},               # empty on purpose — the slot each API fills later
+                                 # "resources" goes HERE when the first API needs it —
+                                 # a sibling of acapPackageConf, never inside it.
+                                 # Omit it entirely while the skeleton declares nothing.
   "acapPackageConf": {
     "setup": {
       "appName": "hello_world",
@@ -272,7 +279,11 @@ confusing install/build failures:
 ```
 
 Field notes:
-- **`schemaVersion`** — use `2.1.0`. Older values like `1.3` are outdated and behave differently.
+- **`schemaVersion`** — use `2.1.0`. Only the **major** actually matters: `acap-build` normalises
+  the value to the newest schema of the same major that the SDK ships, then validates against
+  *that* one. So the packaged manifest inside the `.eap` reads `2.2.0` on SDK 12.11.x even though
+  you wrote `2.1.0` — that is the normaliser, not a corrupted package. Writing `1.3` is a real
+  difference, though: it selects the v1 schema family, which behaves differently.
 - **`appName`** — must match the binary and the `.c` source file names exactly.
 - **`vendorId`** — the integer ID Axis assigns to a registered vendor; `0` is fine as a
   placeholder for local development, set your real ID before distribution.
@@ -280,23 +291,27 @@ Field notes:
   version** you asked the user for at setup: e.g. SDK `12.11.x` → `min` and `max` both `12`.
   Omitting either, or a mismatched range, is a frequent cause of install failures. Keep this major
   in sync with the SDK version used for the build (Makefile/Dockerfile `VERSION`).
+  `acap-build` then warns that `min` is *below the SDK's minimum AXIS OS version* (e.g. `12.11.72`).
+  That warning is expected and the value is left alone — it only fills `min` in when you omitted it.
+  Don't silence it by raising `min` to the SDK's full version: that would stop the app installing
+  on every 12.x device older than the SDK, which is the opposite of what the range is for.
 - **`runMode`** — `once` runs the app a single time when started, which suits a Hello World
   skeleton. Other options: `respawn` (kept running) or `never` (not started automatically).
 
-- **`resources`** — start it as an empty object `{}` and leave it there. The skeleton needs no
-  resources, but the key is where every API declaration will go, and creating it up front at the
-  correct nesting level is what stops the most common manifest error: `resources` written *inside*
-  `acapPackageConf` instead of beside it. With the slot already open you are filling in an
-  existing object rather than deciding where to put a new one. Keep it empty until a feature
-  actually needs something — an unused declaration is one more thing that can stop the app from
-  starting.
+- **`resources`** — leave it out of the skeleton entirely, and add it when the first API needs a
+  declaration. The schema makes this the only working choice: `resources` is not in the manifest's
+  required list, so omitting it is fine, but it carries `minProperties: 1`, so writing it as an
+  empty `{}` fails validation. `acap-build` reports that as
+  `{} does not have enough properties` under a 60-line schema dump, after the compile has already
+  succeeded — it reads like a toolchain fault rather than a manifest one.
 
-Per-API declarations therefore go **into that top-level `resources` object**, a sibling of
-`acapPackageConf`. Group settings live at `resources.linux.user.groups` (not a top-level
-`linux.user.groups`), D-Bus methods at `resources.dbus.requiredMethods`, and so on. Each
-reference file gives only the fragment that belongs inside `resources`; merge it into the empty
-object rather than pasting a second `resources` key. The table below lists each API's requirement
-using that full path.
+When you do add it, `resources` is a **sibling of `acapPackageConf`, not a key inside it** — that
+misplacement is the most common manifest error, and the schema rejects it too. Group settings live
+at `resources.linux.user.groups` (not a top-level `linux.user.groups`), D-Bus methods at
+`resources.dbus.requiredMethods`, and so on. Each reference file gives only the fragment that
+belongs inside `resources`, written from `"resources": {` down, so the first API you add creates
+the object and every later one merges into it rather than pasting a second `resources` key. The
+table below lists each API's requirement using that full path.
 
 ### Available APIs
 

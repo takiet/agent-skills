@@ -45,9 +45,11 @@ skills  -> (SKILL.md per directory)
   starting from `"resources": {` (or `"acapPackageConf": {` for AXParameter and License Key) and
   stop there — no `schemaVersion`, no sibling stubs. The root key is what makes the destination
   unambiguous; everything above it is boilerplate that would repeat across every reference file.
-  Correct placement is enforced structurally instead: the skeleton manifest in `SKILL.md` ships
-  `"resources": {}` already open at the right nesting level, so adding an API means filling an
-  existing object rather than deciding where to create one.
+  Because each fragment starts at `"resources": {`, the first API a project adds creates the
+  object and every later one merges into it. The skeleton manifest must **not** pre-open the slot
+  as `"resources": {}` — the SDK schema puts `minProperties: 1` on `resources`, so an empty object
+  fails validation and breaks the first build. Placement is taught by the comment in the skeleton
+  template instead.
 
 ## Domain notes (building-acap skill)
 
