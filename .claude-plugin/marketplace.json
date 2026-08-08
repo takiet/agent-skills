@@ -13,6 +13,9 @@
       "strict": false,
       "skills": [
         "./skills/building-acap"
+      ],
+      "agents": [
+        "./agents/acap-implementer.md"
       ]
     }
   ]
